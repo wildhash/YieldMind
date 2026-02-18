@@ -58,16 +58,20 @@ export default function Home() {
   const [initError, setInitError] = useState<string | null>(null)
 
   useEffect(() => {
+    const refreshAll = async (errorMessage: string) => {
+      const results = await Promise.allSettled([
+        fetchProtocolData({ throwOnError: true }),
+        fetchVaultStatus({ throwOnError: true }),
+        fetchRebalanceHistory({ throwOnError: true }),
+      ])
+
+      const hadError = results.some((r) => r.status === 'rejected')
+      setInitError(hadError ? errorMessage : null)
+    }
+
     const init = async () => {
       try {
-        const results = await Promise.allSettled([
-          fetchProtocolData({ throwOnError: true }),
-          fetchVaultStatus({ throwOnError: true }),
-          fetchRebalanceHistory({ throwOnError: true }),
-        ])
-
-        const hadError = results.some((r) => r.status === 'rejected')
-        setInitError(hadError ? 'Failed to fully load on-chain state. Data may be incomplete.' : null)
+        await refreshAll('Failed to fully load on-chain state. Data may be incomplete.')
       } catch (error) {
         console.error('Error initializing dashboard:', error)
         setInitError('Failed to fully load on-chain state. Data may be incomplete.')
@@ -78,9 +82,7 @@ export default function Home() {
     init()
 
     const interval = setInterval(() => {
-      fetchProtocolData()
-      fetchVaultStatus()
-      fetchRebalanceHistory()
+      void refreshAll('Failed to refresh on-chain state. Data may be stale.')
     }, 30000)
 
     return () => clearInterval(interval)
@@ -215,7 +217,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen p-4 md:p-8 relative overflow-hidden">
-      <div className="max-w-7xl mx-auto relative z-10">
+      <div className="max-w-7xl mx-auto relative">
         
         {/* Header Section */}
         <motion.div
