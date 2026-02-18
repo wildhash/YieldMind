@@ -6,7 +6,7 @@ YieldMind is a complete, production-ready AI-powered DeFi yield optimizer for BN
 
 ## Architecture
 
-### 🎨 Frontend (Next.js 14 + TypeScript)
+### 🎨 Frontend (Next.js 15 + TypeScript)
 **Location**: `/frontend`
 
 **Key Features**:
@@ -21,7 +21,7 @@ YieldMind is a complete, production-ready AI-powered DeFi yield optimizer for BN
 - `VaultStatus.tsx` - Shows total vault balance and AI status
 - `RebalanceLog.tsx` - Lists rebalance history
 
-**Tech Stack**: Next.js 14, TypeScript, React, Tailwind CSS, ethers.js
+**Tech Stack**: Next.js 15, TypeScript, React 19, Tailwind CSS, ethers.js
 
 ### 🤖 Backend (Python FastAPI)
 **Location**: `/backend`
@@ -255,7 +255,8 @@ YieldMind/
 ## Technology Stack
 
 ### Frontend
-- Next.js 14 (React framework)
+- Next.js 15.5.12 (React framework) - **SECURED** ✅
+- React 19.0.0 (latest stable)
 - TypeScript (type safety)
 - Tailwind CSS (styling)
 - ethers.js (blockchain interaction)

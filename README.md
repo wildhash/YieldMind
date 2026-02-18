@@ -15,7 +15,7 @@ YieldMind is a full-stack AI-powered yield optimizer that automatically rebalanc
 
 ## 🏗️ Architecture
 
-### Frontend (Next.js 14 + TypeScript)
+### Frontend (Next.js 15 + TypeScript)
 - Dark terminal UI with neon lime theme
 - Real-time protocol APY display
 - Live rebalance history
@@ -178,7 +178,7 @@ npx hardhat test
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: Next.js 14, TypeScript, Tailwind CSS, ethers.js
+- **Frontend**: Next.js 15, TypeScript, Tailwind CSS, ethers.js
 - **Backend**: Python, FastAPI, Anthropic SDK, Web3.py
 - **Blockchain**: Solidity 0.8.20, Hardhat, BSC
 - **AI**: Claude Opus 4.5 with tool-use API
