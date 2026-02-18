@@ -87,16 +87,23 @@ export default function Home() {
         : []
       const backendStatus = typeof aiStatusRaw === 'string' ? aiStatusRaw : undefined
 
-      const mapped: ProtocolData[] = backendProtocols.map((p) => ({
-        name: typeof p.name === 'string' ? p.name : 'Unknown',
-        apy: typeof p.apy === 'number' ? p.apy : 0,
-        tvl:
-          typeof p.tvl === 'string'
-            ? p.tvl
-            : String((p as unknown as Record<string, unknown>).tvl ?? '0'),
-        riskScore: p.risk_score ?? p.riskScore ?? 0,
-        isActive: p.is_active ?? p.isActive ?? false,
-      }))
+      const mapped: ProtocolData[] = backendProtocols.map((p) => {
+        const tvlValue = (p as unknown as Record<string, unknown>).tvl
+        const tvl =
+          typeof tvlValue === 'string'
+            ? tvlValue
+            : typeof tvlValue === 'number'
+              ? tvlValue.toString()
+              : '0'
+
+        return {
+          name: typeof p.name === 'string' ? p.name : 'Unknown',
+          apy: typeof p.apy === 'number' ? p.apy : 0,
+          tvl,
+          riskScore: p.risk_score ?? p.riskScore ?? 0,
+          isActive: p.is_active ?? p.isActive ?? false,
+        }
+      })
 
       setProtocols(mapped)
       setAiStatus(backendStatus || 'Active')
@@ -242,8 +249,8 @@ export default function Home() {
             Protocol APYs
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {protocols.map((protocol, idx) => (
-              <ProtocolCard key={idx} {...protocol} />
+            {protocols.map((protocol) => (
+              <ProtocolCard key={protocol.name} {...protocol} />
             ))}
           </div>
         </div>
@@ -259,7 +266,7 @@ function UtcClock() {
   const [now, setNow] = useState<Date>(() => new Date())
 
   useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 1000)
+    const interval = setInterval(() => setNow(new Date()), 10000)
     return () => clearInterval(interval)
   }, [])
 

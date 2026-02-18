@@ -1,4 +1,4 @@
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import os
 import math
 from datetime import datetime
@@ -34,10 +34,7 @@ class AIAgent:
             elif isinstance(block, dict):
                 normalized.append(block)
             else:
-                normalized.append({
-                    "type": getattr(block, "type", "text"),
-                    "text": getattr(block, "text", str(block))
-                })
+                print(f"Unexpected Claude content block type: {type(block)}")
 
         return normalized
         
@@ -160,20 +157,33 @@ Consider:
         )
 
         messages: List[Dict[str, Any]] = [{"role": "user", "content": prompt}]
-        last_stop_reason = None
-        for _ in range(6):
-            message = self.client.messages.create(
-                model="claude-opus-4-20250514",
-                max_tokens=2000,
-                tools=tools,
-                messages=messages
-            )
+        max_tool_rounds = 6
+        got_recommendation = False
+        first_tool_error: Optional[str] = None
+        last_stop_reason: str = "not_started"
+
+        for _ in range(max_tool_rounds):
+            try:
+                message = self.client.messages.create(
+                    model="claude-opus-4-20250514",
+                    max_tokens=2000,
+                    tools=tools,
+                    messages=messages
+                )
+            except Exception as e:
+                return RebalanceDecision(
+                    should_rebalance=False,
+                    target_protocol="",
+                    delta_percentage=0.0,
+                    reason=f"Claude call failed: {e}"
+                )
 
             last_stop_reason = message.stop_reason
 
             if message.stop_reason != "tool_use":
                 break
 
+            # Anthropic tool-use loop expects tool results as `tool_result` blocks.
             tool_results = []
             for block in message.content:
                 if getattr(block, "type", None) != "tool_use":
@@ -187,17 +197,28 @@ Consider:
                     continue
 
                 if tool_name == "calculate_risk_adjusted_return":
+                    apy_raw = tool_input.get("apy", 0)
+                    risk_raw = tool_input.get("risk_score", 0)
                     try:
-                        apy = float(tool_input.get("apy", 0))
-                        risk_score = float(tool_input.get("risk_score", 0))
+                        apy = float(apy_raw)
+                        risk_score = float(risk_raw)
                     except Exception:
+                        if first_tool_error is None:
+                            first_tool_error = "Invalid calculate_risk_adjusted_return input"
+                        print(f"Invalid calculate_risk_adjusted_return input: apy={apy_raw}, risk_score={risk_raw}")
                         apy = 0.0
                         risk_score = 0.0
 
+                    sanitized = False
                     if not math.isfinite(apy) or apy < 0:
                         apy = 0.0
+                        sanitized = True
                     if not math.isfinite(risk_score) or risk_score < 0:
                         risk_score = 0.0
+                        sanitized = True
+
+                    if sanitized:
+                        print(f"Sanitized calculate_risk_adjusted_return input: apy={apy_raw}, risk_score={risk_raw}")
 
                     denom = 1 + risk_score / 10
                     if not math.isfinite(denom) or abs(denom) < 1e-9:
@@ -214,13 +235,17 @@ Consider:
                     try:
                         decision = RebalanceDecision(**tool_input)
                     except Exception as e:
+                        err = f"Invalid recommend_rebalance input: {e}"
+                        if first_tool_error is None:
+                            first_tool_error = err
                         tool_results.append({
                             "type": "tool_result",
                             "tool_use_id": tool_use_id,
-                            "content": json.dumps({"error": f"Invalid recommend_rebalance input: {e}"})
+                            "content": json.dumps({"error": err})
                         })
                         continue
 
+                    got_recommendation = True
                     tool_results.append({
                         "type": "tool_result",
                         "tool_use_id": tool_use_id,
@@ -228,21 +253,28 @@ Consider:
                     })
 
                 else:
+                    err = f"Unknown tool: {tool_name}"
+                    if first_tool_error is None:
+                        first_tool_error = err
                     tool_results.append({
                         "type": "tool_result",
                         "tool_use_id": tool_use_id,
-                        "content": json.dumps({"error": f"Unknown tool: {tool_name}"})
+                        "content": json.dumps({"error": err})
                     })
 
             messages.append({"role": "assistant", "content": self._normalize_content_blocks(message.content)})
             messages.append({"role": "user", "content": tool_results})
 
-        if decision.reason == "No analysis completed":
+        if not got_recommendation:
+            extra = f"; tool_error={first_tool_error}" if first_tool_error else ""
             decision = RebalanceDecision(
                 should_rebalance=False,
                 target_protocol="",
                 delta_percentage=0.0,
-                reason=f"No rebalance recommendation returned (stop_reason={last_stop_reason})"
+                reason=(
+                    f"AI did not return recommend_rebalance after {max_tool_rounds} tool rounds "
+                    f"(stop_reason={last_stop_reason}){extra}"
+                )
             )
 
         print(f"AI Decision: {decision.reason}")
