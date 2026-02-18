@@ -1,4 +1,5 @@
-import { Wallet, DollarSign } from 'lucide-react'
+import { Wallet, DollarSign, ArrowUpRight, ArrowDownRight } from 'lucide-react'
+import { motion } from 'framer-motion'
 
 interface VaultStatusProps {
   balance: string
@@ -7,26 +8,48 @@ interface VaultStatusProps {
 
 export default function VaultStatus({ balance, currentProtocol }: VaultStatusProps) {
   return (
-    <div className="mb-8 terminal-border rounded-lg p-6 bg-dark-panel shadow-neon-lg">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Wallet size={32} className="text-neon-lime" />
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5 }}
+      className="mb-8 terminal-border rounded-xl p-6 bg-gradient-to-br from-dark-panel to-black shadow-neon-lg"
+    >
+      <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="flex items-center gap-4">
+          <div className="p-4 bg-neon-lime/10 rounded-full border border-neon-lime/30">
+            <Wallet size={36} className="text-neon-lime" />
+          </div>
           <div>
-            <p className="text-sm opacity-70">Total Vault Balance</p>
-            <p className="text-3xl font-bold terminal-text">{balance} BNB</p>
-            {currentProtocol ? (
-              <p className="text-xs opacity-60 mt-1">Current: {currentProtocol}</p>
-            ) : null}
+            <p className="text-sm text-gray-400 uppercase tracking-widest mb-1">Smart Vault Balance</p>
+            <p className="text-4xl font-bold terminal-text font-mono">{balance} <span className="text-xl text-gray-400">BNB</span></p>
+            {currentProtocol && (
+              <p className="text-sm text-neon-lime/80 mt-2 flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-neon-lime animate-ping" />
+                Deployed in: {currentProtocol}
+              </p>
+            )}
           </div>
         </div>
-        <div className="text-right">
-          <p className="text-sm opacity-70">Optimized by AI</p>
-          <p className="text-lg font-bold flex items-center gap-2">
-            <DollarSign size={20} />
-            Claude Opus 4.5
-          </p>
+
+        {/* Action Buttons & AI Status */}
+        <div className="flex flex-col items-end gap-4 w-full md:w-auto">
+          <div className="text-right border-b border-dark-border/50 pb-3 w-full md:w-auto">
+            <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Agent Driver</p>
+            <p className="text-lg font-bold flex items-center justify-end gap-2 text-white">
+              <DollarSign size={18} className="text-neon-lime" />
+              Claude Opus 3.5
+            </p>
+          </div>
+          <div className="flex gap-3 w-full md:w-auto">
+            <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-neon-lime/10 hover:bg-neon-lime/20 border border-neon-lime rounded-md text-neon-lime font-bold transition-all hover:scale-105">
+              <ArrowDownRight size={18} /> Deposit
+            </button>
+            <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-black hover:bg-gray-900 border border-dark-border rounded-md text-gray-300 font-bold transition-all hover:border-gray-500">
+              <ArrowUpRight size={18} /> Withdraw
+            </button>
+          </div>
         </div>
       </div>
-    </div>
+    </motion.div>
   )
 }
