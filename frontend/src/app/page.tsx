@@ -55,13 +55,22 @@ export default function Home() {
     { message: string; tone: 'success' | 'error' } | null
   >(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [initError, setInitError] = useState<string | null>(null)
 
   useEffect(() => {
     const init = async () => {
       try {
-        await Promise.all([fetchProtocolData(), fetchVaultStatus(), fetchRebalanceHistory()])
+        const results = await Promise.allSettled([
+          fetchProtocolData({ throwOnError: true }),
+          fetchVaultStatus({ throwOnError: true }),
+          fetchRebalanceHistory({ throwOnError: true }),
+        ])
+
+        const hadError = results.some((r) => r.status === 'rejected')
+        setInitError(hadError ? 'Failed to fully load on-chain state. Data may be incomplete.' : null)
       } catch (error) {
         console.error('Error initializing dashboard:', error)
+        setInitError('Failed to fully load on-chain state. Data may be incomplete.')
       } finally {
         setIsLoading(false)
       }
@@ -251,10 +260,11 @@ export default function Home() {
                 Connect Wallet
               </button>
             </div>
-            <div className="h-4 flex items-center justify-end">
+            <div className="min-h-[1rem] flex items-center justify-end w-full">
               {triggerStatus && (
                 <p
                   className={`text-xs font-mono ${triggerStatus.tone === 'error' ? 'text-red-400' : 'text-neon-lime'}`}
+                  title={triggerStatus.message}
                 >
                   {triggerStatus.message}
                 </p>
@@ -270,6 +280,11 @@ export default function Home() {
           </div>
         ) : (
           <>
+            {initError && (
+              <div className="mb-6 rounded-lg px-4 py-3 bg-red-950/20 border border-red-500/20">
+                <p className="text-sm font-mono text-red-300">{initError}</p>
+              </div>
+            )}
             <VaultStatus balance={vaultBalance} currentProtocol={currentProtocol} />
 
             <div className="mb-8">
@@ -305,7 +320,7 @@ function UtcClock() {
   }, [])
 
   if (!now) {
-    return <span className="text-xs text-gray-400 font-mono">--:--:-- UTC</span>
+    return <span className="text-xs text-gray-400 font-mono invisible">00:00:00 UTC</span>
   }
 
   const hours = String(now.getUTCHours()).padStart(2, '0')

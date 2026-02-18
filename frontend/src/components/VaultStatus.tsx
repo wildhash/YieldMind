@@ -9,19 +9,18 @@ interface VaultStatusProps {
 }
 
 export default function VaultStatus({ balance, currentProtocol, onDeposit, onWithdraw }: VaultStatusProps) {
-  const depositEnabled = typeof onDeposit === 'function'
-  const withdrawEnabled = typeof onWithdraw === 'function'
+  const depositHandler = typeof onDeposit === 'function' ? onDeposit : undefined
+  const withdrawHandler = typeof onWithdraw === 'function' ? onWithdraw : undefined
+
+  const depositEnabled = Boolean(depositHandler)
+  const withdrawEnabled = Boolean(withdrawHandler)
 
   const handleDepositClick = () => {
-    if (typeof onDeposit === 'function') {
-      onDeposit()
-    }
+    depositHandler?.()
   }
 
   const handleWithdrawClick = () => {
-    if (typeof onWithdraw === 'function') {
-      onWithdraw()
-    }
+    withdrawHandler?.()
   }
 
   return (
