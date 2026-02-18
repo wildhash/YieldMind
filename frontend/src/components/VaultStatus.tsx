@@ -9,6 +9,21 @@ interface VaultStatusProps {
 }
 
 export default function VaultStatus({ balance, currentProtocol, onDeposit, onWithdraw }: VaultStatusProps) {
+  const depositEnabled = typeof onDeposit === 'function'
+  const withdrawEnabled = typeof onWithdraw === 'function'
+
+  const handleDepositClick = () => {
+    if (typeof onDeposit === 'function') {
+      onDeposit()
+    }
+  }
+
+  const handleWithdrawClick = () => {
+    if (typeof onWithdraw === 'function') {
+      onWithdraw()
+    }
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -45,28 +60,28 @@ export default function VaultStatus({ balance, currentProtocol, onDeposit, onWit
           <div className="flex gap-3 w-full md:w-auto">
             <button
               type="button"
-              onClick={onDeposit}
-              disabled={!onDeposit}
-              aria-disabled={!onDeposit}
-              aria-label={!onDeposit ? 'Deposit (coming soon)' : 'Deposit'}
-              title={!onDeposit ? 'Coming soon' : undefined}
+              onClick={handleDepositClick}
+              disabled={!depositEnabled}
+              aria-disabled={!depositEnabled}
+              aria-label={!depositEnabled ? 'Deposit (coming soon)' : 'Deposit'}
+              title={!depositEnabled ? 'Coming soon' : undefined}
               className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-neon-lime/10 hover:bg-neon-lime/20 border border-neon-lime rounded-md text-neon-lime font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neon-lime/10 disabled:hover:scale-100"
             >
               <ArrowDownRight size={18} /> Deposit
             </button>
             <button
               type="button"
-              onClick={onWithdraw}
-              disabled={!onWithdraw}
-              aria-disabled={!onWithdraw}
-              aria-label={!onWithdraw ? 'Withdraw (coming soon)' : 'Withdraw'}
-              title={!onWithdraw ? 'Coming soon' : undefined}
+              onClick={handleWithdrawClick}
+              disabled={!withdrawEnabled}
+              aria-disabled={!withdrawEnabled}
+              aria-label={!withdrawEnabled ? 'Withdraw (coming soon)' : 'Withdraw'}
+              title={!withdrawEnabled ? 'Coming soon' : undefined}
               className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-black hover:bg-gray-900 border border-dark-border rounded-md text-gray-300 font-bold transition-all hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black"
             >
               <ArrowUpRight size={18} /> Withdraw
             </button>
           </div>
-          {!onDeposit && !onWithdraw && (
+          {!depositEnabled && !withdrawEnabled && (
             <p className="text-[11px] text-gray-500 text-right mt-1 w-full md:w-auto">
               Wallet actions coming soon.
             </p>

@@ -14,7 +14,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <div className="app-shell">{children}</div>
+        <div className="app-shell">
+          <div className="crt-overlay" aria-hidden="true" />
+          <div className="app-content">{children}</div>
+        </div>
       </body>
     </html>
   )

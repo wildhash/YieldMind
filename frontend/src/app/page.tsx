@@ -51,8 +51,9 @@ export default function Home() {
   const [aiStatus, setAiStatus] = useState('Initializing Core...')
   const [rebalances, setRebalances] = useState<RebalanceEvent[]>([])
   const [isTriggeringCycle, setIsTriggeringCycle] = useState(false)
-  const [triggerMessage, setTriggerMessage] = useState<string | null>(null)
-  const [triggerMessageTone, setTriggerMessageTone] = useState<'success' | 'error' | null>(null)
+  const [triggerStatus, setTriggerStatus] = useState<
+    { message: string; tone: 'success' | 'error' } | null
+  >(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
@@ -176,13 +177,11 @@ export default function Home() {
   const triggerCycle = async () => {
     try {
       setIsTriggeringCycle(true)
-      setTriggerMessage(null)
-      setTriggerMessageTone(null)
+      setTriggerStatus(null)
       const response = await fetch(`${BACKEND_URL}/api/trigger-cycle`, { method: 'POST' })
 
       if (!response.ok) {
-        setTriggerMessage(`Backend returned ${response.status}`)
-        setTriggerMessageTone('error')
+        setTriggerStatus({ message: `Backend returned ${response.status}`, tone: 'error' })
         return
       }
 
@@ -192,17 +191,14 @@ export default function Home() {
           fetchVaultStatus({ throwOnError: true }),
           fetchRebalanceHistory({ throwOnError: true }),
         ])
-        setTriggerMessage('Cycle triggered and dashboard updated')
-        setTriggerMessageTone('success')
+        setTriggerStatus({ message: 'Cycle triggered and dashboard updated', tone: 'success' })
       } catch (error) {
         console.error('Error refreshing after trigger:', error)
-        setTriggerMessage('Cycle triggered, but failed to refresh dashboard data')
-        setTriggerMessageTone('error')
+        setTriggerStatus({ message: 'Cycle triggered, but failed to refresh dashboard data', tone: 'error' })
       }
     } catch (error) {
       console.error('Error triggering AI cycle:', error)
-      setTriggerMessage('Failed to trigger AI cycle')
-      setTriggerMessageTone('error')
+      setTriggerStatus({ message: 'Failed to trigger AI cycle', tone: 'error' })
     } finally {
       setIsTriggeringCycle(false)
     }
@@ -256,13 +252,11 @@ export default function Home() {
               </button>
             </div>
             <div className="h-4 flex items-center justify-end">
-              {triggerMessage && (
+              {triggerStatus && (
                 <p
-                  className={`text-xs font-mono ${
-                    triggerMessageTone === 'error' ? 'text-red-400' : 'text-neon-lime'
-                  }`}
+                  className={`text-xs font-mono ${triggerStatus.tone === 'error' ? 'text-red-400' : 'text-neon-lime'}`}
                 >
-                  {triggerMessage}
+                  {triggerStatus.message}
                 </p>
               )}
             </div>
@@ -303,19 +297,21 @@ export default function Home() {
 }
 
 function UtcClock() {
-  const [now, setNow] = useState<Date>(() => new Date())
+  const [now, setNow] = useState<Date | null>(null)
   useEffect(() => {
+    setNow(new Date())
     const interval = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(interval)
   }, [])
 
-  const time = now.toLocaleTimeString('en-US', {
-    timeZone: 'UTC',
-    hour12: false,
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  })
+  if (!now) {
+    return <span className="text-xs text-gray-400 font-mono">--:--:-- UTC</span>
+  }
+
+  const hours = String(now.getUTCHours()).padStart(2, '0')
+  const minutes = String(now.getUTCMinutes()).padStart(2, '0')
+  const seconds = String(now.getUTCSeconds()).padStart(2, '0')
+  const time = `${hours}:${minutes}:${seconds}`
 
   return <span className="text-xs text-gray-400 font-mono">{time} UTC</span>
 }

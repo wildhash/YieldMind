@@ -20,12 +20,13 @@ export default function ProtocolCard({ name, apy, tvl, riskScore, isActive, inde
   const clampedRiskScore = Math.max(0, Math.min(10, riskScore))
   const risk = getRiskClasses(clampedRiskScore)
   const riskPct = (clampedRiskScore / 10) * 100
+  const safeIndex = Math.max(0, Math.min(20, index))
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.1 }}
+      transition={{ duration: 0.4, delay: safeIndex * 0.1 }}
       className={`terminal-border rounded-xl p-5 bg-dark-panel/80 backdrop-blur-sm hover:shadow-neon transition-shadow ${
         isActive ? 'shadow-neon ring-2 ring-neon-lime/20' : ''
       }`}
