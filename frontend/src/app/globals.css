@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  background-color: #0a0a0a;
+  color: #39FF14;
+  font-family: 'Courier New', monospace;
+}
+
+.terminal-text {
+  text-shadow: 0 0 5px #39FF14;
+}
+
+.terminal-border {
+  border: 1px solid #39FF14;
+  box-shadow: 0 0 5px #39FF14;
+}
+
+.glow-button {
+  transition: all 0.3s ease;
+}
+
+.glow-button:hover {
+  box-shadow: 0 0 10px #39FF14, 0 0 40px #39FF14;
+  transform: scale(1.05);
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+.pulse-glow {
+  animation: pulse-glow 2s ease-in-out infinite;
+}

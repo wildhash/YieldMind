@@ -1,0 +1,17 @@
+{
+  "name": "yieldmind-contracts",
+  "version": "1.0.0",
+  "description": "YieldMind smart contracts for BSC",
+  "scripts": {
+    "compile": "hardhat compile",
+    "test": "hardhat test",
+    "deploy": "hardhat run scripts/deploy.js --network bsc"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "hardhat": "^2.22.13"
+  },
+  "dependencies": {
+    "dotenv": "^16.6.1"
+  }
+}
