@@ -50,14 +50,8 @@ export default function Home() {
   const [aiStatus, setAiStatus] = useState('Analyzing...')
   const [rebalances, setRebalances] = useState<RebalanceEvent[]>([])
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
-  const [now, setNow] = useState<Date>(new Date())
   const [isTriggeringCycle, setIsTriggeringCycle] = useState(false)
   const [triggerError, setTriggerError] = useState<string | null>(null)
-
-  useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 1000)
-    return () => clearInterval(interval)
-  }, [])
 
   useEffect(() => {
     // Fetch initial data
@@ -75,48 +69,79 @@ export default function Home() {
     return () => clearInterval(interval)
   }, [])
 
-  const fetchProtocolData = async () => {
+  const fetchProtocolData = async (options: { throwOnError?: boolean } = {}) => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/protocols`)
-      const data = (await response.json()) as {
-        protocols?: BackendProtocolData[]
-        ai_status?: string
+      const raw = (await response.json()) as unknown
+      if (!raw || typeof raw !== 'object') {
+        throw new Error('Unexpected /api/protocols response')
       }
 
-      const mapped: ProtocolData[] = (data.protocols || []).map((p) => ({
+      const data = raw as Record<string, unknown>
+      const protocolsRaw = data.protocols
+      const aiStatusRaw = data.ai_status
+
+      const backendProtocols: BackendProtocolData[] = Array.isArray(protocolsRaw)
+        ? (protocolsRaw as BackendProtocolData[])
+        : []
+      const backendStatus = typeof aiStatusRaw === 'string' ? aiStatusRaw : undefined
+
+      const mapped: ProtocolData[] = backendProtocols.map((p) => ({
         name: p.name,
-        apy: p.apy,
+        apy: typeof p.apy === 'number' ? p.apy : 0,
         tvl: p.tvl,
         riskScore: p.risk_score ?? p.riskScore ?? 0,
         isActive: p.is_active ?? p.isActive ?? false,
       }))
 
       setProtocols(mapped)
-      setAiStatus(data.ai_status || 'Active')
+      setAiStatus(backendStatus || 'Active')
       setLastUpdate(new Date())
     } catch (error) {
       console.error('Error fetching protocol data:', error)
+      if (options.throwOnError) {
+        throw error
+      }
     }
   }
 
-  const fetchVaultStatus = async () => {
+  const fetchVaultStatus = async (options: { throwOnError?: boolean } = {}) => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/vault/status`)
-      const data = await response.json()
-      setVaultBalance(data.balance || '0')
-      setCurrentProtocol(data.current_protocol || data.currentProtocol)
+      const raw = (await response.json()) as unknown
+      if (!raw || typeof raw !== 'object') {
+        throw new Error('Unexpected /api/vault/status response')
+      }
+
+      const data = raw as Record<string, unknown>
+      const balanceRaw = data.balance
+      const currentProtocolRaw = data.current_protocol ?? data.currentProtocol
+
+      setVaultBalance(typeof balanceRaw === 'string' ? balanceRaw : String(balanceRaw ?? '0'))
+      setCurrentProtocol(typeof currentProtocolRaw === 'string' ? currentProtocolRaw : undefined)
     } catch (error) {
       console.error('Error fetching vault status:', error)
+      if (options.throwOnError) {
+        throw error
+      }
     }
   }
 
-  const fetchRebalanceHistory = async () => {
+  const fetchRebalanceHistory = async (options: { throwOnError?: boolean } = {}) => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/rebalances`)
-      const data = (await response.json()) as {
-        rebalances?: BackendRebalanceEvent[]
+      const raw = (await response.json()) as unknown
+      if (!raw || typeof raw !== 'object') {
+        throw new Error('Unexpected /api/rebalances response')
       }
-      const mapped: RebalanceEvent[] = (data.rebalances || []).map((r) => ({
+
+      const data = raw as Record<string, unknown>
+      const rebalancesRaw = data.rebalances
+      const backendRebalances: BackendRebalanceEvent[] = Array.isArray(rebalancesRaw)
+        ? (rebalancesRaw as BackendRebalanceEvent[])
+        : []
+
+      const mapped: RebalanceEvent[] = backendRebalances.map((r) => ({
         timestamp: r.timestamp,
         fromProtocol: r.from_protocol ?? r.fromProtocol ?? '',
         toProtocol: r.to_protocol ?? r.toProtocol ?? '',
@@ -126,6 +151,9 @@ export default function Home() {
       setRebalances(mapped)
     } catch (error) {
       console.error('Error fetching rebalance history:', error)
+      if (options.throwOnError) {
+        throw error
+      }
     }
   }
 
@@ -140,9 +168,16 @@ export default function Home() {
         return
       }
 
-      await fetchProtocolData()
-      await fetchVaultStatus()
-      await fetchRebalanceHistory()
+      try {
+        await Promise.all([
+          fetchProtocolData({ throwOnError: true }),
+          fetchVaultStatus({ throwOnError: true }),
+          fetchRebalanceHistory({ throwOnError: true }),
+        ])
+      } catch (error) {
+        console.error('Error refreshing after trigger:', error)
+        setTriggerError('Cycle triggered, but failed to refresh dashboard data')
+      }
     } catch (error) {
       console.error('Error triggering AI cycle:', error)
       setTriggerError('Failed to trigger AI cycle')
@@ -169,7 +204,7 @@ export default function Home() {
                 <Activity className="pulse-glow" size={20} />
                 <span className="text-sm">AI Status: {aiStatus}</span>
               </div>
-              <p className="text-xs opacity-50 mb-3">{now.toUTCString().replace('GMT', 'UTC')}</p>
+              <UtcClock />
               <button
                 onClick={triggerCycle}
                 disabled={isTriggeringCycle}
@@ -210,4 +245,15 @@ export default function Home() {
       </div>
     </main>
   )
+}
+
+function UtcClock() {
+  const [now, setNow] = useState<Date>(() => new Date())
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(interval)
+  }, [])
+
+  return <p className="text-xs opacity-50 mb-3">{now.toUTCString().replace('GMT', 'UTC')}</p>
 }

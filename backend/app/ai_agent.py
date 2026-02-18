@@ -1,5 +1,6 @@
 from typing import List, Dict, Any
 import os
+import math
 from datetime import datetime
 import anthropic
 import json
@@ -16,6 +17,21 @@ class AIAgent:
         self.vault_manager = VaultManager()
         self.status = "Initializing..."
         self.last_run = None
+
+    def _normalize_content_blocks(self, blocks: Any) -> List[Dict[str, Any]]:
+        normalized: List[Dict[str, Any]] = []
+        for block in blocks:
+            if hasattr(block, "model_dump"):
+                normalized.append(block.model_dump())
+            elif isinstance(block, dict):
+                normalized.append(block)
+            else:
+                normalized.append({
+                    "type": getattr(block, "type", "text"),
+                    "text": getattr(block, "text", str(block))
+                })
+
+        return normalized
         
     async def run_cycle(self):
         """Main AI optimization cycle - runs every 5 minutes"""
@@ -73,14 +89,6 @@ class AIAgent:
         current_allocation: Dict[str, float]
     ) -> RebalanceDecision:
         """Use Claude Opus 4.5 to analyze protocols and make rebalance decision"""
-
-        if self.client is None:
-            return RebalanceDecision(
-                should_rebalance=False,
-                target_protocol="",
-                delta_percentage=0.0,
-                reason="Missing ANTHROPIC_API_KEY"
-            )
         
         # Define tools for Claude
         tools = [
@@ -141,6 +149,7 @@ Consider:
         )
 
         messages: List[Dict[str, Any]] = [{"role": "user", "content": prompt}]
+        last_stop_reason = None
         for _ in range(6):
             message = self.client.messages.create(
                 model="claude-opus-4-20250514",
@@ -148,6 +157,8 @@ Consider:
                 tools=tools,
                 messages=messages
             )
+
+            last_stop_reason = message.stop_reason
 
             if message.stop_reason != "tool_use":
                 break
@@ -165,8 +176,18 @@ Consider:
                     continue
 
                 if tool_name == "calculate_risk_adjusted_return":
-                    apy = float(tool_input.get("apy", 0))
-                    risk_score = float(tool_input.get("risk_score", 0))
+                    try:
+                        apy = float(tool_input.get("apy", 0))
+                        risk_score = float(tool_input.get("risk_score", 0))
+                    except Exception:
+                        apy = 0.0
+                        risk_score = 0.0
+
+                    if not math.isfinite(apy) or apy < 0:
+                        apy = 0.0
+                    if not math.isfinite(risk_score) or risk_score < 0:
+                        risk_score = 0.0
+
                     metric = apy / (1 + risk_score / 10)
                     tool_results.append({
                         "type": "tool_result",
@@ -198,8 +219,16 @@ Consider:
                         "content": json.dumps({"error": f"Unknown tool: {tool_name}"})
                     })
 
-            messages.append({"role": "assistant", "content": message.content})
+            messages.append({"role": "assistant", "content": self._normalize_content_blocks(message.content)})
             messages.append({"role": "user", "content": tool_results})
+
+        if decision.reason == "No analysis completed":
+            decision = RebalanceDecision(
+                should_rebalance=False,
+                target_protocol="",
+                delta_percentage=0.0,
+                reason=f"No rebalance recommendation returned (stop_reason={last_stop_reason})"
+            )
 
         print(f"AI Decision: {decision.reason}")
         print(f"Should rebalance: {decision.should_rebalance}")
