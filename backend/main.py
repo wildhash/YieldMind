@@ -11,6 +11,29 @@ from app.models import BackendRootResponse
 
 load_dotenv()
 
+def _get_int_env(name: str, default: int) -> int:
+    raw = os.getenv(name)
+    if raw is None or raw == "":
+        return default
+
+    try:
+        return int(raw)
+    except ValueError:
+        print(f"Invalid {name}={raw!r}; using {default}")
+        return default
+
+DEFAULT_CYCLE_INTERVAL_MINUTES = 5
+MIN_CYCLE_INTERVAL_MINUTES = 5
+
+raw_cycle_interval = _get_int_env("CYCLE_INTERVAL_MINUTES", DEFAULT_CYCLE_INTERVAL_MINUTES)
+if raw_cycle_interval < MIN_CYCLE_INTERVAL_MINUTES:
+    print(
+        f"CYCLE_INTERVAL_MINUTES={raw_cycle_interval} is too low; using {MIN_CYCLE_INTERVAL_MINUTES}"
+    )
+    CYCLE_INTERVAL_MINUTES = MIN_CYCLE_INTERVAL_MINUTES
+else:
+    CYCLE_INTERVAL_MINUTES = raw_cycle_interval
+
 app = FastAPI(title="YieldMind AI Backend", version="1.0.0")
 
 # CORS middleware
@@ -28,7 +51,7 @@ set_ai_agent(ai_agent)
 
 # Setup scheduler for 5-minute cycles
 scheduler = BackgroundScheduler()
-scheduler.add_job(ai_agent.run_cycle, 'interval', minutes=5)
+scheduler.add_job(ai_agent.run_cycle, 'interval', minutes=CYCLE_INTERVAL_MINUTES)
 scheduler.start()
 
 # Include routes
@@ -37,8 +60,8 @@ app.include_router(router, prefix="/api")
 @app.on_event("startup")
 async def startup_event():
     print("🚀 YieldMind AI Backend started")
-    print("🤖 AI Agent initialized with Claude Opus 4.5")
-    print("⏱️  Running optimization cycles every 5 minutes")
+    print(f"🤖 AI Agent initialized (model: {ai_agent.model})")
+    print(f"⏱️  Running optimization cycles every {CYCLE_INTERVAL_MINUTES} minutes")
     # Run initial cycle
     await ai_agent.run_cycle()
 
@@ -51,8 +74,9 @@ async def root() -> BackendRootResponse:
     return BackendRootResponse(
         name="YieldMind AI Backend",
         status="active",
-        ai_model="claude-opus-4-5",
-        cycle_interval="5 minutes",
+        ai_model=ai_agent.model,
+        cycle_interval=f"{CYCLE_INTERVAL_MINUTES} minutes",
+        cycle_interval_minutes=CYCLE_INTERVAL_MINUTES,
     )
 
 if __name__ == "__main__":

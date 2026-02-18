@@ -38,6 +38,12 @@ Edit `.env` and add your credentials:
 # Get from https://console.anthropic.com/
 ANTHROPIC_API_KEY=sk-ant-api03-...
 
+# Optional: Claude model ID (must support tool use)
+ANTHROPIC_MODEL=claude-opus-4-20250514
+
+# Optional: scheduler interval (minimum 5)
+CYCLE_INTERVAL_MINUTES=5
+
 # BSC RPC (you can use public endpoint or get private from Ankr/Infura)
 BSC_RPC_URL=https://bsc-dataseed.binance.org/
 

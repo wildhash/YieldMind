@@ -1,7 +1,7 @@
 from typing import List, Dict, Any, Optional
 import os
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 import anthropic
 import json
 
@@ -12,11 +12,15 @@ from app.models import RebalanceDecision
 class AIAgent:
     def __init__(self):
         api_key = os.getenv("ANTHROPIC_API_KEY")
+        self.model = os.getenv("ANTHROPIC_MODEL", "claude-opus-4-20250514")
+        if os.getenv("ANTHROPIC_MODEL") and not self.model.startswith("claude-"):
+            print(f"Warning: ANTHROPIC_MODEL={self.model!r} may not support tool use")
         self.client = anthropic.Anthropic(api_key=api_key) if api_key else None
         self.protocol_manager = ProtocolManager()
         self.vault_manager = VaultManager()
         self.status = "Initializing..."
-        self.last_run = None
+        self.last_run: Optional[datetime] = None
+        self.last_error: Optional[str] = None
 
     def _missing_api_key_decision(self) -> RebalanceDecision:
         return RebalanceDecision(
@@ -39,22 +43,24 @@ class AIAgent:
         return normalized
         
     async def run_cycle(self):
-        """Main AI optimization cycle - runs every 5 minutes"""
+        """Main AI optimization cycle."""
+        self.last_error = None
         try:
             if self.client is None:
                 self.status = self._missing_api_key_decision().reason
-                self.last_run = datetime.now()
+                self.last_error = self.status
+                self.last_run = datetime.now(timezone.utc)
                 return
 
             self.status = "Fetching protocol data..."
             print(f"\n{'='*60}")
-            print(f"AI Agent cycle started at {datetime.now()}")
+            print(f"AI Agent cycle started at {datetime.now(timezone.utc)}")
             print(f"{'='*60}")
             
             # Fetch APY data from protocols
             protocols = await self.protocol_manager.fetch_all_apys()
             
-            self.status = "Analyzing with Claude Opus 4.5..."
+            self.status = f"Analyzing with {self.model}..."
             
             # Prepare data for AI analysis
             protocol_data = [
@@ -81,11 +87,13 @@ class AIAgent:
             else:
                 self.status = "Optimal - No rebalance needed"
             
-            self.last_run = datetime.now()
+            self.last_run = datetime.now(timezone.utc)
             print(f"Cycle completed: {self.status}")
             
         except Exception as e:
             self.status = f"Error: {str(e)}"
+            self.last_error = str(e)
+            self.last_run = datetime.now(timezone.utc)
             print(f"Error in AI cycle: {e}")
     
     async def analyze_with_claude(
@@ -93,7 +101,7 @@ class AIAgent:
         protocols: List[Dict[str, Any]], 
         current_allocation: Dict[str, float]
     ) -> RebalanceDecision:
-        """Use Claude Opus 4.5 to analyze protocols and make rebalance decision"""
+        """Use Claude to analyze protocols and make rebalance decision"""
 
         if self.client is None:
             return self._missing_api_key_decision()
@@ -165,7 +173,7 @@ Consider:
         for _ in range(max_tool_rounds):
             try:
                 message = self.client.messages.create(
-                    model="claude-opus-4-20250514",
+                    model=self.model,
                     max_tokens=2000,
                     tools=tools,
                     messages=messages

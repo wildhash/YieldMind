@@ -36,10 +36,14 @@ async def get_protocols() -> ProtocolsResponse:
 async def get_vault_status() -> VaultStatusResponse:
     """Get vault status and balance"""
     if ai_agent is None:
-        return VaultStatusResponse(balance="0", current_protocol="")
+        return VaultStatusResponse(balance="0", current_protocol=None, agent_initialized=False)
     
     balance = await ai_agent.vault_manager.get_balance()
-    return VaultStatusResponse(balance=balance, current_protocol=ai_agent.vault_manager.current_protocol)
+    return VaultStatusResponse(
+        balance=balance,
+        current_protocol=ai_agent.vault_manager.current_protocol,
+        agent_initialized=ai_agent.client is not None and ai_agent.last_error is None,
+    )
 
 @router.get("/rebalances", response_model=RebalancesResponse)
 async def get_rebalances() -> RebalancesResponse:
@@ -57,4 +61,10 @@ async def trigger_cycle() -> TriggerCycleResponse:
         return TriggerCycleResponse(status="error", message="AI agent not initialized")
     
     await ai_agent.run_cycle()
+    if ai_agent.client is None:
+        return TriggerCycleResponse(status="error", message=ai_agent.status, last_run=ai_agent.last_run)
+
+    if ai_agent.last_error is not None:
+        return TriggerCycleResponse(status="error", message=ai_agent.status, last_run=ai_agent.last_run)
+
     return TriggerCycleResponse(status="success", message="AI cycle triggered", last_run=ai_agent.last_run)

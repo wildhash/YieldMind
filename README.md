@@ -117,8 +117,12 @@ The dashboard features a dark terminal aesthetic with neon lime (#39FF14) accent
 ## 🔧 Configuration
 
 ### Backend Environment Variables
+
+See `SETUP.md` and `backend/.env.example` for the full list and semantics (including that `ANTHROPIC_MODEL` must support tool use).
 ```env
 ANTHROPIC_API_KEY=your_anthropic_api_key
+ANTHROPIC_MODEL=claude-opus-4-20250514
+CYCLE_INTERVAL_MINUTES=5 # minimum 5
 BSC_RPC_URL=https://bsc-dataseed.binance.org/
 VAULT_CONTRACT_ADDRESS=0x...
 PRIVATE_KEY=your_private_key

@@ -1,7 +1,7 @@
 from typing import Dict
 import os
 from web3 import Web3
-from datetime import datetime
+from datetime import datetime, timezone
 import json
 
 from app.models import RebalanceEvent
@@ -38,7 +38,7 @@ class VaultManager:
         
         # Create rebalance event
         event = RebalanceEvent(
-            timestamp=datetime.now().isoformat(),
+            timestamp=datetime.now(timezone.utc),
             from_protocol=self.current_protocol,
             to_protocol=target_protocol,
             amount="All funds",

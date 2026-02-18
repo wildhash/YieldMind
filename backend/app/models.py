@@ -16,7 +16,7 @@ class RebalanceDecision(BaseModel):
     reason: str
 
 class RebalanceEvent(BaseModel):
-    timestamp: str
+    timestamp: datetime
     from_protocol: str
     to_protocol: str
     amount: str
@@ -31,7 +31,8 @@ class ProtocolsResponse(BaseModel):
 
 class VaultStatusResponse(BaseModel):
     balance: str
-    current_protocol: str
+    current_protocol: Optional[str] = None
+    agent_initialized: bool = True
 
 
 class RebalancesResponse(BaseModel):
@@ -49,3 +50,4 @@ class BackendRootResponse(BaseModel):
     status: str
     ai_model: str
     cycle_interval: str
+    cycle_interval_minutes: int
