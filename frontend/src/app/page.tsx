@@ -5,6 +5,7 @@ import ProtocolCard from '@/components/ProtocolCard'
 import VaultStatus from '@/components/VaultStatus'
 import RebalanceLog from '@/components/RebalanceLog'
 import { Activity, Zap, TrendingUp } from 'lucide-react'
+import { BACKEND_URL } from '@/lib/constants'
 
 interface ProtocolData {
   name: string
@@ -47,7 +48,7 @@ export default function Home() {
 
   const fetchProtocolData = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/protocols')
+      const response = await fetch(`${BACKEND_URL}/api/protocols`)
       const data = await response.json()
       setProtocols(data.protocols || [])
       setAiStatus(data.ai_status || 'Active')
@@ -59,7 +60,7 @@ export default function Home() {
 
   const fetchVaultStatus = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/vault/status')
+      const response = await fetch(`${BACKEND_URL}/api/vault/status`)
       const data = await response.json()
       setVaultBalance(data.balance || '0')
     } catch (error) {
@@ -69,7 +70,7 @@ export default function Home() {
 
   const fetchRebalanceHistory = async () => {
     try {
-      const response = await fetch('http://localhost:8000/api/rebalances')
+      const response = await fetch(`${BACKEND_URL}/api/rebalances`)
       const data = await response.json()
       setRebalances(data.rebalances || [])
     } catch (error) {

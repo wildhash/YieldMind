@@ -16,7 +16,7 @@ class ProtocolManager:
                 "risk_score": 4
             },
             "Lista DAO": {
-                "url": "https://api.lista.org/v1/apy",  # Placeholder
+                "url": "https://api.lista.org/v1/apy",  # TODO: Replace with actual Lista DAO API endpoint before production
                 "risk_score": 5
             }
         }

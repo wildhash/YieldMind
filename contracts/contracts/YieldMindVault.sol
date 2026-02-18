@@ -10,7 +10,8 @@ contract YieldMindVault {
     address public owner;
     address public aiAgent;
     
-    // Protocol addresses (placeholders for BSC mainnet)
+    // Protocol addresses (IMPORTANT: Replace with actual BSC mainnet addresses before deployment)
+    // These are placeholder values for testing only
     address public constant PANCAKESWAP_V3 = address(0x1);
     address public constant VENUS = address(0x2);
     address public constant LISTA_DAO = address(0x3);
