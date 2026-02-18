@@ -10,11 +10,15 @@ body {
   background-image: linear-gradient(rgba(57, 255, 20, 0.03) 1px, transparent 1px),
     linear-gradient(90deg, rgba(57, 255, 20, 0.03) 1px, transparent 1px);
   background-size: 30px 30px;
-  position: relative;
 }
 
-/* CRT Scanline effect */
-body::after {
+/* CRT Scanline effect (kept behind app content, but above background) */
+.app-shell {
+  position: relative;
+  min-height: 100vh;
+}
+
+.app-shell::after {
   content: " ";
   display: block;
   position: fixed;
@@ -26,6 +30,11 @@ body::after {
   z-index: -1;
   background-size: 100% 2px, 3px 100%;
   pointer-events: none;
+}
+
+.app-shell > * {
+  position: relative;
+  z-index: 1;
 }
 
 .terminal-text {

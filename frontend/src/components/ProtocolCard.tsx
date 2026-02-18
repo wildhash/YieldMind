@@ -7,15 +7,19 @@ interface ProtocolCardProps {
   tvl: string
   riskScore: number
   isActive: boolean
-  index: number
+  index?: number
 }
 
-export default function ProtocolCard({ name, apy, tvl, riskScore, isActive, index }: ProtocolCardProps) {
-  const getRiskColor = (score: number) => {
-    if (score <= 3) return 'text-green-400 bg-green-400'
-    if (score <= 6) return 'text-yellow-400 bg-yellow-400'
-    return 'text-red-500 bg-red-500'
+export default function ProtocolCard({ name, apy, tvl, riskScore, isActive, index = 0 }: ProtocolCardProps) {
+  const getRiskClasses = (score: number) => {
+    if (score <= 3) return { text: 'text-green-400', bar: 'bg-green-400' }
+    if (score <= 6) return { text: 'text-yellow-400', bar: 'bg-yellow-400' }
+    return { text: 'text-red-500', bar: 'bg-red-500' }
   }
+
+  const clampedRiskScore = Math.max(0, Math.min(10, riskScore))
+  const risk = getRiskClasses(clampedRiskScore)
+  const riskPct = (clampedRiskScore / 10) * 100
 
   return (
     <motion.div
@@ -50,15 +54,15 @@ export default function ProtocolCard({ name, apy, tvl, riskScore, isActive, inde
               <Shield size={16} className="text-neon-lime" />
               <span className="text-sm text-gray-400">Risk</span>
             </div>
-            <span className={`text-sm font-bold ${getRiskColor(riskScore).split(' ')[0]}`}>
-              {riskScore}/10
+            <span className={`text-sm font-bold ${risk.text}`}>
+              {clampedRiskScore}/10
             </span>
           </div>
           {/* Visual Risk Bar */}
           <div className="w-full bg-gray-800 rounded-full h-1.5 overflow-hidden">
             <div
-              className={`h-full rounded-full transition-all ${getRiskColor(riskScore).split(' ')[1]}`}
-              style={{ width: `${(riskScore / 10) * 100}%` }}
+              className={`h-full rounded-full transition-all ${risk.bar}`}
+              style={{ width: `${riskPct}%` }}
             />
           </div>
         </div>

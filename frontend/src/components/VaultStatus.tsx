@@ -4,9 +4,11 @@ import { motion } from 'framer-motion'
 interface VaultStatusProps {
   balance: string
   currentProtocol?: string
+  onDeposit?: () => void
+  onWithdraw?: () => void
 }
 
-export default function VaultStatus({ balance, currentProtocol }: VaultStatusProps) {
+export default function VaultStatus({ balance, currentProtocol, onDeposit, onWithdraw }: VaultStatusProps) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
@@ -41,10 +43,22 @@ export default function VaultStatus({ balance, currentProtocol }: VaultStatusPro
             </p>
           </div>
           <div className="flex gap-3 w-full md:w-auto">
-            <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-neon-lime/10 hover:bg-neon-lime/20 border border-neon-lime rounded-md text-neon-lime font-bold transition-all hover:scale-105">
+            <button
+              type="button"
+              onClick={onDeposit}
+              disabled={!onDeposit}
+              title={!onDeposit ? 'Coming soon' : undefined}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-neon-lime/10 hover:bg-neon-lime/20 border border-neon-lime rounded-md text-neon-lime font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neon-lime/10 disabled:hover:scale-100"
+            >
               <ArrowDownRight size={18} /> Deposit
             </button>
-            <button className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-black hover:bg-gray-900 border border-dark-border rounded-md text-gray-300 font-bold transition-all hover:border-gray-500">
+            <button
+              type="button"
+              onClick={onWithdraw}
+              disabled={!onWithdraw}
+              title={!onWithdraw ? 'Coming soon' : undefined}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-black hover:bg-gray-900 border border-dark-border rounded-md text-gray-300 font-bold transition-all hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black"
+            >
               <ArrowUpRight size={18} /> Withdraw
             </button>
           </div>

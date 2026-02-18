@@ -52,12 +52,18 @@ export default function Home() {
   const [rebalances, setRebalances] = useState<RebalanceEvent[]>([])
   const [isTriggeringCycle, setIsTriggeringCycle] = useState(false)
   const [triggerMessage, setTriggerMessage] = useState<string | null>(null)
+  const [triggerMessageTone, setTriggerMessageTone] = useState<'success' | 'error' | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
     const init = async () => {
-      await Promise.all([fetchProtocolData(), fetchVaultStatus(), fetchRebalanceHistory()])
-      setIsLoading(false)
+      try {
+        await Promise.all([fetchProtocolData(), fetchVaultStatus(), fetchRebalanceHistory()])
+      } catch (error) {
+        console.error('Error initializing dashboard:', error)
+      } finally {
+        setIsLoading(false)
+      }
     }
     init()
 
@@ -171,10 +177,12 @@ export default function Home() {
     try {
       setIsTriggeringCycle(true)
       setTriggerMessage(null)
+      setTriggerMessageTone(null)
       const response = await fetch(`${BACKEND_URL}/api/trigger-cycle`, { method: 'POST' })
 
       if (!response.ok) {
         setTriggerMessage(`Backend returned ${response.status}`)
+        setTriggerMessageTone('error')
         return
       }
 
@@ -185,13 +193,16 @@ export default function Home() {
           fetchRebalanceHistory({ throwOnError: true }),
         ])
         setTriggerMessage('Cycle triggered and dashboard updated')
+        setTriggerMessageTone('success')
       } catch (error) {
         console.error('Error refreshing after trigger:', error)
         setTriggerMessage('Cycle triggered, but failed to refresh dashboard data')
+        setTriggerMessageTone('error')
       }
     } catch (error) {
       console.error('Error triggering AI cycle:', error)
       setTriggerMessage('Failed to trigger AI cycle')
+      setTriggerMessageTone('error')
     } finally {
       setIsTriggeringCycle(false)
     }
@@ -244,7 +255,15 @@ export default function Home() {
                 Connect Wallet
               </button>
             </div>
-            {triggerMessage && <p className="text-xs text-neon-lime absolute -bottom-6">{triggerMessage}</p>}
+            {triggerMessage && (
+              <p
+                className={`text-xs font-mono ${
+                  triggerMessageTone === 'error' ? 'text-red-400' : 'text-neon-lime'
+                }`}
+              >
+                {triggerMessage}
+              </p>
+            )}
           </div>
         </motion.div>
 
@@ -287,5 +306,14 @@ function UtcClock() {
     const interval = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(interval)
   }, [])
-  return <span className="text-xs text-gray-400 font-mono">{now.toISOString().split('T')[1].split('.')[0]} UTC</span>
+
+  const time = now.toLocaleTimeString('en-US', {
+    timeZone: 'UTC',
+    hour12: false,
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+  })
+
+  return <span className="text-xs text-gray-400 font-mono">{time} UTC</span>
 }
