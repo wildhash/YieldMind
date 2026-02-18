@@ -52,6 +52,7 @@ export default function Home() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [isTriggeringCycle, setIsTriggeringCycle] = useState(false)
   const [triggerError, setTriggerError] = useState<string | null>(null)
+  const [triggerMessage, setTriggerMessage] = useState<string | null>(null)
 
   useEffect(() => {
     // Fetch initial data
@@ -87,9 +88,12 @@ export default function Home() {
       const backendStatus = typeof aiStatusRaw === 'string' ? aiStatusRaw : undefined
 
       const mapped: ProtocolData[] = backendProtocols.map((p) => ({
-        name: p.name,
+        name: typeof p.name === 'string' ? p.name : 'Unknown',
         apy: typeof p.apy === 'number' ? p.apy : 0,
-        tvl: p.tvl,
+        tvl:
+          typeof p.tvl === 'string'
+            ? p.tvl
+            : String((p as unknown as Record<string, unknown>).tvl ?? '0'),
         riskScore: p.risk_score ?? p.riskScore ?? 0,
         isActive: p.is_active ?? p.isActive ?? false,
       }))
@@ -142,11 +146,11 @@ export default function Home() {
         : []
 
       const mapped: RebalanceEvent[] = backendRebalances.map((r) => ({
-        timestamp: r.timestamp,
+        timestamp: typeof r.timestamp === 'string' ? r.timestamp : '',
         fromProtocol: r.from_protocol ?? r.fromProtocol ?? '',
         toProtocol: r.to_protocol ?? r.toProtocol ?? '',
-        amount: r.amount,
-        reason: r.reason,
+        amount: typeof r.amount === 'string' ? r.amount : String(r.amount ?? ''),
+        reason: typeof r.reason === 'string' ? r.reason : '',
       }))
       setRebalances(mapped)
     } catch (error) {
@@ -161,6 +165,7 @@ export default function Home() {
     try {
       setIsTriggeringCycle(true)
       setTriggerError(null)
+      setTriggerMessage(null)
       const response = await fetch(`${BACKEND_URL}/api/trigger-cycle`, { method: 'POST' })
 
       if (!response.ok) {
@@ -174,6 +179,7 @@ export default function Home() {
           fetchVaultStatus({ throwOnError: true }),
           fetchRebalanceHistory({ throwOnError: true }),
         ])
+        setTriggerMessage('Cycle triggered and dashboard updated')
       } catch (error) {
         console.error('Error refreshing after trigger:', error)
         setTriggerError('Cycle triggered, but failed to refresh dashboard data')
@@ -216,6 +222,8 @@ export default function Home() {
               </button>
               {triggerError ? (
                 <p className="text-xs text-red-400 mt-2">{triggerError}</p>
+              ) : triggerMessage ? (
+                <p className="text-xs text-green-400 mt-2">{triggerMessage}</p>
               ) : null}
               <p className="text-xs opacity-50">
                 Last Update: {lastUpdate.toLocaleTimeString()}

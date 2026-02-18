@@ -18,6 +18,14 @@ class AIAgent:
         self.status = "Initializing..."
         self.last_run = None
 
+    def _missing_api_key_decision(self) -> RebalanceDecision:
+        return RebalanceDecision(
+            should_rebalance=False,
+            target_protocol="",
+            delta_percentage=0.0,
+            reason="Claude client not configured (missing ANTHROPIC_API_KEY)"
+        )
+
     def _normalize_content_blocks(self, blocks: Any) -> List[Dict[str, Any]]:
         normalized: List[Dict[str, Any]] = []
         for block in blocks:
@@ -37,7 +45,7 @@ class AIAgent:
         """Main AI optimization cycle - runs every 5 minutes"""
         try:
             if self.client is None:
-                self.status = "Missing ANTHROPIC_API_KEY"
+                self.status = self._missing_api_key_decision().reason
                 self.last_run = datetime.now()
                 return
 
@@ -89,6 +97,9 @@ class AIAgent:
         current_allocation: Dict[str, float]
     ) -> RebalanceDecision:
         """Use Claude Opus 4.5 to analyze protocols and make rebalance decision"""
+
+        if self.client is None:
+            return self._missing_api_key_decision()
         
         # Define tools for Claude
         tools = [
@@ -188,7 +199,11 @@ Consider:
                     if not math.isfinite(risk_score) or risk_score < 0:
                         risk_score = 0.0
 
-                    metric = apy / (1 + risk_score / 10)
+                    denom = 1 + risk_score / 10
+                    if not math.isfinite(denom) or abs(denom) < 1e-9:
+                        metric = 0.0
+                    else:
+                        metric = apy / denom
                     tool_results.append({
                         "type": "tool_result",
                         "tool_use_id": tool_use_id,
