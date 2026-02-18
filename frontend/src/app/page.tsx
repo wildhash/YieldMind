@@ -72,9 +72,6 @@ export default function Home() {
     const init = async () => {
       try {
         await refreshAll('Failed to fully load on-chain state. Data may be incomplete.')
-      } catch (error) {
-        console.error('Error initializing dashboard:', error)
-        setInitError('Failed to fully load on-chain state. Data may be incomplete.')
       } finally {
         setIsLoading(false)
       }
