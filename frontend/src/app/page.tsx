@@ -26,9 +26,18 @@ interface RebalanceEvent {
 export default function Home() {
   const [protocols, setProtocols] = useState<ProtocolData[]>([])
   const [vaultBalance, setVaultBalance] = useState('0')
+  const [currentProtocol, setCurrentProtocol] = useState<string | undefined>(undefined)
   const [aiStatus, setAiStatus] = useState('Analyzing...')
   const [rebalances, setRebalances] = useState<RebalanceEvent[]>([])
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const [now, setNow] = useState<Date>(new Date())
+  const [isTriggeringCycle, setIsTriggeringCycle] = useState(false)
+  const [triggerError, setTriggerError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(new Date()), 1000)
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     // Fetch initial data
@@ -50,7 +59,16 @@ export default function Home() {
     try {
       const response = await fetch(`${BACKEND_URL}/api/protocols`)
       const data = await response.json()
-      setProtocols(data.protocols || [])
+
+      const mapped: ProtocolData[] = (data.protocols || []).map((p: any) => ({
+        name: p.name,
+        apy: p.apy,
+        tvl: p.tvl,
+        riskScore: p.risk_score ?? p.riskScore,
+        isActive: p.is_active ?? p.isActive ?? false,
+      }))
+
+      setProtocols(mapped)
       setAiStatus(data.ai_status || 'Active')
       setLastUpdate(new Date())
     } catch (error) {
@@ -63,6 +81,7 @@ export default function Home() {
       const response = await fetch(`${BACKEND_URL}/api/vault/status`)
       const data = await response.json()
       setVaultBalance(data.balance || '0')
+      setCurrentProtocol(data.current_protocol || data.currentProtocol)
     } catch (error) {
       console.error('Error fetching vault status:', error)
     }
@@ -72,9 +91,38 @@ export default function Home() {
     try {
       const response = await fetch(`${BACKEND_URL}/api/rebalances`)
       const data = await response.json()
-      setRebalances(data.rebalances || [])
+      const mapped: RebalanceEvent[] = (data.rebalances || []).map((r: any) => ({
+        timestamp: r.timestamp,
+        fromProtocol: r.from_protocol ?? r.fromProtocol,
+        toProtocol: r.to_protocol ?? r.toProtocol,
+        amount: r.amount,
+        reason: r.reason,
+      }))
+      setRebalances(mapped)
     } catch (error) {
       console.error('Error fetching rebalance history:', error)
+    }
+  }
+
+  const triggerCycle = async () => {
+    try {
+      setIsTriggeringCycle(true)
+      setTriggerError(null)
+      const response = await fetch(`${BACKEND_URL}/api/trigger-cycle`, { method: 'POST' })
+
+      if (!response.ok) {
+        setTriggerError(`Backend returned ${response.status}`)
+        return
+      }
+
+      await fetchProtocolData()
+      await fetchVaultStatus()
+      await fetchRebalanceHistory()
+    } catch (error) {
+      console.error('Error triggering AI cycle:', error)
+      setTriggerError('Failed to trigger AI cycle')
+    } finally {
+      setIsTriggeringCycle(false)
     }
   }
 
@@ -96,6 +144,19 @@ export default function Home() {
                 <Activity className="pulse-glow" size={20} />
                 <span className="text-sm">AI Status: {aiStatus}</span>
               </div>
+              <p className="text-xs opacity-50 mb-3">{now.toUTCString().replace('GMT', 'UTC')}</p>
+              <button
+                onClick={triggerCycle}
+                disabled={isTriggeringCycle}
+                className={`glow-button terminal-border rounded px-4 py-2 text-sm font-bold w-full ${
+                  isTriggeringCycle ? 'opacity-50 cursor-not-allowed' : ''
+                }`}
+              >
+                {isTriggeringCycle ? 'Running cycle...' : 'Run cycle now'}
+              </button>
+              {triggerError ? (
+                <p className="text-xs text-red-400 mt-2">{triggerError}</p>
+              ) : null}
               <p className="text-xs opacity-50">
                 Last Update: {lastUpdate.toLocaleTimeString()}
               </p>
@@ -104,7 +165,7 @@ export default function Home() {
         </div>
 
         {/* Vault Status */}
-        <VaultStatus balance={vaultBalance} />
+        <VaultStatus balance={vaultBalance} currentProtocol={currentProtocol} />
 
         {/* Protocol Cards */}
         <div className="mb-8">

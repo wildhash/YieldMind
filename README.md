@@ -4,6 +4,8 @@
 
 YieldMind is a full-stack AI-powered yield optimizer that automatically rebalances your crypto assets across the best DeFi protocols on BNB Chain (BSC). Using Claude Opus 4.5, it analyzes APY rates from PancakeSwap V3, Venus, and Lista DAO every 5 minutes and executes smart rebalances when opportunities exceed 2%.
 
+Submission details live in `SUBMISSION.md`.
+
 ## 🌟 Features
 
 - **AI-Powered Optimization**: Claude Opus 4.5 analyzes risk-adjusted returns across multiple protocols
