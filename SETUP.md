@@ -68,6 +68,8 @@ The backend will be available at http://localhost:8000
 ### API Endpoints
 
 - `GET /` - Backend status
+- `GET /docs` - Swagger UI for the OpenAPI schema
+- `GET /openapi.json` - OpenAPI schema (useful for generating a typed frontend client)
 - `GET /api/protocols` - Get current protocol APYs
 - `GET /api/vault/status` - Get vault balance and current protocol
 - `GET /api/rebalances` - Get rebalance history

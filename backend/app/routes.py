@@ -1,6 +1,10 @@
 from fastapi import APIRouter
-from typing import List
-from app.models import Protocol, RebalanceEvent
+from app.models import (
+    ProtocolsResponse,
+    VaultStatusResponse,
+    RebalancesResponse,
+    TriggerCycleResponse,
+)
 from app.ai_agent import AIAgent
 
 router = APIRouter()
@@ -12,14 +16,11 @@ def set_ai_agent(agent: AIAgent):
     global ai_agent
     ai_agent = agent
 
-@router.get("/protocols")
-async def get_protocols():
+@router.get("/protocols", response_model=ProtocolsResponse)
+async def get_protocols() -> ProtocolsResponse:
     """Get current protocol APY data"""
     if ai_agent is None:
-        return {
-            "protocols": [],
-            "ai_status": "Not initialized"
-        }
+        return ProtocolsResponse(protocols=[], ai_status="Not initialized")
     
     protocols = await ai_agent.protocol_manager.fetch_all_apys()
     
@@ -29,43 +30,31 @@ async def get_protocols():
         if p.name == current:
             p.is_active = True
     
-    return {
-        "protocols": [p.dict() for p in protocols],
-        "ai_status": ai_agent.status
-    }
+    return ProtocolsResponse(protocols=protocols, ai_status=ai_agent.status)
 
-@router.get("/vault/status")
-async def get_vault_status():
+@router.get("/vault/status", response_model=VaultStatusResponse)
+async def get_vault_status() -> VaultStatusResponse:
     """Get vault status and balance"""
     if ai_agent is None:
-        return {"balance": "0"}
+        return VaultStatusResponse(balance="0", current_protocol="")
     
     balance = await ai_agent.vault_manager.get_balance()
-    return {
-        "balance": balance,
-        "current_protocol": ai_agent.vault_manager.current_protocol
-    }
+    return VaultStatusResponse(balance=balance, current_protocol=ai_agent.vault_manager.current_protocol)
 
-@router.get("/rebalances")
-async def get_rebalances():
+@router.get("/rebalances", response_model=RebalancesResponse)
+async def get_rebalances() -> RebalancesResponse:
     """Get rebalance history"""
     if ai_agent is None:
-        return {"rebalances": []}
+        return RebalancesResponse(rebalances=[])
     
     history = ai_agent.vault_manager.get_rebalance_history()
-    return {
-        "rebalances": [event.dict() for event in history]
-    }
+    return RebalancesResponse(rebalances=history)
 
-@router.post("/trigger-cycle")
-async def trigger_cycle():
+@router.post("/trigger-cycle", response_model=TriggerCycleResponse)
+async def trigger_cycle() -> TriggerCycleResponse:
     """Manually trigger an AI optimization cycle"""
     if ai_agent is None:
-        return {"status": "error", "message": "AI agent not initialized"}
+        return TriggerCycleResponse(status="error", message="AI agent not initialized")
     
     await ai_agent.run_cycle()
-    return {
-        "status": "success",
-        "message": "AI cycle triggered",
-        "last_run": ai_agent.last_run
-    }
+    return TriggerCycleResponse(status="success", message="AI cycle triggered", last_run=ai_agent.last_run)

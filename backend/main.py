@@ -7,6 +7,7 @@ import os
 
 from app.ai_agent import AIAgent
 from app.routes import router, set_ai_agent
+from app.models import BackendRootResponse
 
 load_dotenv()
 
@@ -45,14 +46,14 @@ async def startup_event():
 async def shutdown_event():
     scheduler.shutdown()
 
-@app.get("/")
-async def root():
-    return {
-        "name": "YieldMind AI Backend",
-        "status": "active",
-        "ai_model": "claude-opus-4-5",
-        "cycle_interval": "5 minutes"
-    }
+@app.get("/", response_model=BackendRootResponse)
+async def root() -> BackendRootResponse:
+    return BackendRootResponse(
+        name="YieldMind AI Backend",
+        status="active",
+        ai_model="claude-opus-4-5",
+        cycle_interval="5 minutes",
+    )
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
