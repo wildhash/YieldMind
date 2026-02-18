@@ -255,15 +255,17 @@ export default function Home() {
                 Connect Wallet
               </button>
             </div>
-            {triggerMessage && (
-              <p
-                className={`text-xs font-mono ${
-                  triggerMessageTone === 'error' ? 'text-red-400' : 'text-neon-lime'
-                }`}
-              >
-                {triggerMessage}
-              </p>
-            )}
+            <div className="h-4 flex items-center justify-end">
+              {triggerMessage && (
+                <p
+                  className={`text-xs font-mono ${
+                    triggerMessageTone === 'error' ? 'text-red-400' : 'text-neon-lime'
+                  }`}
+                >
+                  {triggerMessage}
+                </p>
+              )}
+            </div>
           </div>
         </motion.div>
 

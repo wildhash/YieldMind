@@ -62,6 +62,11 @@ export default function VaultStatus({ balance, currentProtocol, onDeposit, onWit
               <ArrowUpRight size={18} /> Withdraw
             </button>
           </div>
+          {!onDeposit && !onWithdraw && (
+            <p className="text-[11px] text-gray-500 text-right mt-1 w-full md:w-auto">
+              Wallet actions coming soon.
+            </p>
+          )}
         </div>
       </div>
     </motion.div>
