@@ -15,10 +15,30 @@ interface ProtocolData {
   isActive: boolean
 }
 
+type BackendProtocolData = {
+  name: string
+  apy: number
+  tvl: string
+  risk_score?: number
+  riskScore?: number
+  is_active?: boolean
+  isActive?: boolean
+}
+
 interface RebalanceEvent {
   timestamp: string
   fromProtocol: string
   toProtocol: string
+  amount: string
+  reason: string
+}
+
+type BackendRebalanceEvent = {
+  timestamp: string
+  from_protocol?: string
+  fromProtocol?: string
+  to_protocol?: string
+  toProtocol?: string
   amount: string
   reason: string
 }
@@ -58,13 +78,16 @@ export default function Home() {
   const fetchProtocolData = async () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/protocols`)
-      const data = await response.json()
+      const data = (await response.json()) as {
+        protocols?: BackendProtocolData[]
+        ai_status?: string
+      }
 
-      const mapped: ProtocolData[] = (data.protocols || []).map((p: any) => ({
+      const mapped: ProtocolData[] = (data.protocols || []).map((p) => ({
         name: p.name,
         apy: p.apy,
         tvl: p.tvl,
-        riskScore: p.risk_score ?? p.riskScore,
+        riskScore: p.risk_score ?? p.riskScore ?? 0,
         isActive: p.is_active ?? p.isActive ?? false,
       }))
 
@@ -90,11 +113,13 @@ export default function Home() {
   const fetchRebalanceHistory = async () => {
     try {
       const response = await fetch(`${BACKEND_URL}/api/rebalances`)
-      const data = await response.json()
-      const mapped: RebalanceEvent[] = (data.rebalances || []).map((r: any) => ({
+      const data = (await response.json()) as {
+        rebalances?: BackendRebalanceEvent[]
+      }
+      const mapped: RebalanceEvent[] = (data.rebalances || []).map((r) => ({
         timestamp: r.timestamp,
-        fromProtocol: r.from_protocol ?? r.fromProtocol,
-        toProtocol: r.to_protocol ?? r.toProtocol,
+        fromProtocol: r.from_protocol ?? r.fromProtocol ?? '',
+        toProtocol: r.to_protocol ?? r.toProtocol ?? '',
         amount: r.amount,
         reason: r.reason,
       }))

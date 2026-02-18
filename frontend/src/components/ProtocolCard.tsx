@@ -1,4 +1,4 @@
-import { TrendingUp, Shield, AlertCircle } from 'lucide-react'
+import { TrendingUp, Shield } from 'lucide-react'
 
 interface ProtocolCardProps {
   name: string
