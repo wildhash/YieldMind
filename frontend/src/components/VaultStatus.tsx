@@ -47,6 +47,8 @@ export default function VaultStatus({ balance, currentProtocol, onDeposit, onWit
               type="button"
               onClick={onDeposit}
               disabled={!onDeposit}
+              aria-disabled={!onDeposit}
+              aria-label={!onDeposit ? 'Deposit (coming soon)' : 'Deposit'}
               title={!onDeposit ? 'Coming soon' : undefined}
               className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-neon-lime/10 hover:bg-neon-lime/20 border border-neon-lime rounded-md text-neon-lime font-bold transition-all hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-neon-lime/10 disabled:hover:scale-100"
             >
@@ -56,6 +58,8 @@ export default function VaultStatus({ balance, currentProtocol, onDeposit, onWit
               type="button"
               onClick={onWithdraw}
               disabled={!onWithdraw}
+              aria-disabled={!onWithdraw}
+              aria-label={!onWithdraw ? 'Withdraw (coming soon)' : 'Withdraw'}
               title={!onWithdraw ? 'Coming soon' : undefined}
               className="flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2 bg-black hover:bg-gray-900 border border-dark-border rounded-md text-gray-300 font-bold transition-all hover:border-gray-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-black"
             >
