@@ -10,6 +10,7 @@ const rawBscRpcUrl = process.env.BSC_RPC_URL || "https://bsc-dataseed.binance.or
 const normalizedBscRpcUrl = /^https?:\/\//.test(rawBscRpcUrl)
   ? rawBscRpcUrl
   : `https://${rawBscRpcUrl}`;
+const etherscanApiKey = process.env.ETHERSCAN_API_KEY || process.env.BSCSCAN_API_KEY || "";
 
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
@@ -39,5 +40,8 @@ module.exports = {
       accounts: normalizedPrivateKey ? [normalizedPrivateKey] : [],
       chainId: 97
     }
+  },
+  etherscan: {
+    apiKey: etherscanApiKey
   }
 };
