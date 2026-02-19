@@ -27,7 +27,7 @@ export default function ProtocolCard({ name, apy, tvl, riskScore, isActive, inde
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: safeIndex * 0.1 }}
-      className={`terminal-border rounded-xl p-5 bg-dark-panel/80 backdrop-blur-sm hover:shadow-neon transition-shadow ${
+      className={`terminal-border terminal-panel rounded-xl p-5 bg-dark-panel/80 hover:shadow-neon transition-shadow ${
         isActive ? 'shadow-neon ring-2 ring-neon-lime/20' : ''
       }`}
     >

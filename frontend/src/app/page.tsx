@@ -220,7 +220,7 @@ export default function Home() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-8 terminal-border rounded-xl p-6 bg-dark-panel/80 backdrop-blur-md flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+          className="mb-8 terminal-border terminal-panel rounded-xl p-6 bg-dark-panel/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
         >
           <div>
             <h1 className="text-4xl font-black terminal-text flex items-center gap-3">
