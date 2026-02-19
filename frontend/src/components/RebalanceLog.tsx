@@ -14,7 +14,7 @@ interface RebalanceLogProps {
 
 export default function RebalanceLog({ rebalances }: RebalanceLogProps) {
   return (
-    <div className="terminal-border terminal-panel rounded-lg p-6 bg-dark-panel">
+    <div className="terminal-border rounded-lg p-6 bg-dark-panel">
       <h2 className="text-2xl font-bold mb-4 flex items-center">
         <ArrowRightLeft className="mr-2" size={24} />
         Recent Rebalances
