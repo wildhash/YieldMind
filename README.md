@@ -56,12 +56,19 @@ cd YieldMind
 ```bash
 cd contracts
 npm install
-cp ../backend/.env.example ../backend/.env
-# Edit backend/.env and add your PRIVATE_KEY and other variables
+# Create / edit root .env (Hardhat reads ../.env)
+# Add PRIVATE_KEY, BSC_RPC_URL, and optionally ETHERSCAN_API_KEY/BSCSCAN_API_KEY
 npm run compile
 npm run deploy
 # Copy the deployed contract address
 ```
+
+## ✅ Live Deployment (Mainnet)
+
+- **Network**: BNB Smart Chain Mainnet (chainId 56)
+- **Contract**: `YieldMindVault` at `0xe88e351C79c06ed92Bf043965F2a5aAA8F4C9A59`
+- **Deployment Tx**: `0x4634f0589413ed42bbdc2a97926e0a78ef8b054d696d190b926a1fce4e97c122`
+- **Verified Source**: https://bscscan.com/address/0xe88e351C79c06ed92Bf043965F2a5aAA8F4C9A59#code
 
 ### 3. Setup Backend
 
@@ -126,6 +133,15 @@ CYCLE_INTERVAL_MINUTES=5 # minimum 5
 BSC_RPC_URL=https://bsc-dataseed.binance.org/
 VAULT_CONTRACT_ADDRESS=0x...
 PRIVATE_KEY=your_private_key
+ETHERSCAN_API_KEY=your_bscscan_or_etherscan_v2_api_key # optional, for `hardhat verify`
+# BSCSCAN_API_KEY=your_bscscan_api_key_here # optional fallback
+```
+
+### Contract Verification
+
+```bash
+cd contracts
+ETHERSCAN_API_KEY=your_api_key npx hardhat verify --network bsc 0xe88e351C79c06ed92Bf043965F2a5aAA8F4C9A59 0x2c4980c930a14782492e800fc5E5c9E9e33F7a4B
 ```
 
 ### Frontend Environment Variables
