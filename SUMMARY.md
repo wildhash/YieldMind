@@ -170,7 +170,7 @@ Manually triggers an AI optimization cycle.
 - `withdraw(uint256 amount)` - Withdraw funds
 
 ### AI Agent Functions  
-- `executeRebalance(address toProtocol, string reason, uint256 delta)` - Execute rebalance
+- `executeRebalance(address toProtocol, string reason, uint256 deltaPercentage)` - Execute rebalance
 
 ### Owner Functions
 - `updateAIAgent(address newAgent)` - Update AI agent address

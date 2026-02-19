@@ -142,7 +142,7 @@ NEXT_PUBLIC_BSC_RPC_URL=https://bsc-dataseed.binance.org/
 - `withdraw(uint256 amount)` - Withdraw your deposits
 
 ### AI Agent Functions
-- `executeRebalance(address toProtocol, string reason, uint256 delta)` - Execute rebalance
+- `executeRebalance(address toProtocol, string reason, uint256 deltaPercentage)` - Execute rebalance
 
 ### View Functions
 - `getBalance()` - Get vault balance

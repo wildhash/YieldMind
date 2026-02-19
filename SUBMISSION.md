@@ -22,7 +22,9 @@ Every rebalance is recorded on-chain in the `YieldMindVault` contract to provide
 - Secondary: DeFi
 
 ## On-chain proof
-Not deployed yet.
+- Network: BNB Smart Chain Mainnet (chainId 56)
+- Contract: `YieldMindVault` at `0xe88e351C79c06ed92Bf043965F2a5aAA8F4C9A59`
+- Deployment tx: `0x4634f0589413ed42bbdc2a97926e0a78ef8b054d696d190b926a1fce4e97c122`
 
 ## Links
 - GitHub: this repository
