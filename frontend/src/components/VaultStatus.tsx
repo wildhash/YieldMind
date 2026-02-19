@@ -28,7 +28,7 @@ export default function VaultStatus({ balance, currentProtocol, onDeposit, onWit
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ duration: 0.5 }}
-      className="mb-8 terminal-border rounded-xl p-6 bg-gradient-to-br from-dark-panel to-black shadow-neon-lg"
+      className="mb-8 terminal-border terminal-panel rounded-xl p-6 bg-gradient-to-br from-dark-panel to-black shadow-neon-lg"
     >
       <div className="flex flex-col md:flex-row items-center justify-between gap-6">
         <div className="flex items-center gap-4">
