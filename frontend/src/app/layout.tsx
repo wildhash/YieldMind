@@ -13,7 +13,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>
+      <body suppressHydrationWarning>
         <div className="app-shell">
           <div className="app-content">{children}</div>
           <div className="crt-overlay" aria-hidden="true" />

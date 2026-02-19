@@ -53,7 +53,7 @@ export default function VaultStatus({ balance, currentProtocol, onDeposit, onWit
             <p className="text-xs text-gray-500 uppercase tracking-widest mb-1">Agent Driver</p>
             <p className="text-lg font-bold flex items-center justify-end gap-2 text-white">
               <DollarSign size={18} className="text-neon-lime" />
-              Claude Opus 3.5
+              Claude Opus 4.6
             </p>
           </div>
           <div className="flex gap-3 w-full md:w-auto">
