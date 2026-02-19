@@ -4,8 +4,9 @@ import { useEffect, useState } from 'react'
 import ProtocolCard from '@/components/ProtocolCard'
 import VaultStatus from '@/components/VaultStatus'
 import RebalanceLog from '@/components/RebalanceLog'
-import { Activity, Zap, TrendingUp } from 'lucide-react'
+import { Activity, Zap, TrendingUp, Cpu } from 'lucide-react'
 import { BACKEND_URL } from '@/lib/constants'
+import { motion } from 'framer-motion'
 
 interface ProtocolData {
   name: string
@@ -47,24 +48,38 @@ export default function Home() {
   const [protocols, setProtocols] = useState<ProtocolData[]>([])
   const [vaultBalance, setVaultBalance] = useState('0')
   const [currentProtocol, setCurrentProtocol] = useState<string | undefined>(undefined)
-  const [aiStatus, setAiStatus] = useState('Analyzing...')
+  const [aiStatus, setAiStatus] = useState('Initializing Core...')
   const [rebalances, setRebalances] = useState<RebalanceEvent[]>([])
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
   const [isTriggeringCycle, setIsTriggeringCycle] = useState(false)
-  const [triggerError, setTriggerError] = useState<string | null>(null)
-  const [triggerMessage, setTriggerMessage] = useState<string | null>(null)
+  const [triggerStatus, setTriggerStatus] = useState<
+    { message: string; tone: 'success' | 'error' } | null
+  >(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [initError, setInitError] = useState<string | null>(null)
 
   useEffect(() => {
-    // Fetch initial data
-    fetchProtocolData()
-    fetchVaultStatus()
-    fetchRebalanceHistory()
+    const refreshAll = async (errorMessage: string) => {
+      const results = await Promise.allSettled([
+        fetchProtocolData({ throwOnError: true }),
+        fetchVaultStatus({ throwOnError: true }),
+        fetchRebalanceHistory({ throwOnError: true }),
+      ])
 
-    // Set up polling every 30 seconds
+      const hadError = results.some((r) => r.status === 'rejected')
+      setInitError(hadError ? errorMessage : null)
+    }
+
+    const init = async () => {
+      try {
+        await refreshAll('Failed to fully load on-chain state. Data may be incomplete.')
+      } finally {
+        setIsLoading(false)
+      }
+    }
+    init()
+
     const interval = setInterval(() => {
-      fetchProtocolData()
-      fetchVaultStatus()
-      fetchRebalanceHistory()
+      void refreshAll('Failed to refresh on-chain state. Data may be stale.')
     }, 30000)
 
     return () => clearInterval(interval)
@@ -107,7 +122,6 @@ export default function Home() {
 
       setProtocols(mapped)
       setAiStatus(backendStatus || 'Active')
-      setLastUpdate(new Date())
     } catch (error) {
       console.error('Error fetching protocol data:', error)
       if (options.throwOnError) {
@@ -171,12 +185,11 @@ export default function Home() {
   const triggerCycle = async () => {
     try {
       setIsTriggeringCycle(true)
-      setTriggerError(null)
-      setTriggerMessage(null)
+      setTriggerStatus(null)
       const response = await fetch(`${BACKEND_URL}/api/trigger-cycle`, { method: 'POST' })
 
       if (!response.ok) {
-        setTriggerError(`Backend returned ${response.status}`)
+        setTriggerStatus({ message: `Backend returned ${response.status}`, tone: 'error' })
         return
       }
 
@@ -186,89 +199,133 @@ export default function Home() {
           fetchVaultStatus({ throwOnError: true }),
           fetchRebalanceHistory({ throwOnError: true }),
         ])
-        setTriggerMessage('Cycle triggered and dashboard updated')
+        setTriggerStatus({ message: 'Cycle triggered and dashboard updated', tone: 'success' })
       } catch (error) {
         console.error('Error refreshing after trigger:', error)
-        setTriggerError('Cycle triggered, but failed to refresh dashboard data')
+        setTriggerStatus({ message: 'Cycle triggered, but failed to refresh dashboard data', tone: 'error' })
       }
     } catch (error) {
       console.error('Error triggering AI cycle:', error)
-      setTriggerError('Failed to trigger AI cycle')
+      setTriggerStatus({ message: 'Failed to trigger AI cycle', tone: 'error' })
     } finally {
       setIsTriggeringCycle(false)
     }
   }
 
   return (
-    <main className="min-h-screen bg-dark-bg p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-8 terminal-border rounded-lg p-6 bg-dark-panel">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-4xl font-bold terminal-text mb-2">
-                <Zap className="inline mr-2" size={40} />
-                YieldMind
-              </h1>
-              <p className="text-neon-lime opacity-70">AI DeFi Optimizer on BNB Chain</p>
-            </div>
-            <div className="text-right">
-              <div className="flex items-center gap-2 mb-2">
-                <Activity className="pulse-glow" size={20} />
-                <span className="text-sm">AI Status: {aiStatus}</span>
+    <main className="min-h-screen p-4 md:p-8 relative overflow-hidden">
+      <div className="max-w-7xl mx-auto relative">
+        
+        {/* Header Section */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-8 terminal-border terminal-panel rounded-xl p-6 bg-dark-panel/80 flex flex-col md:flex-row items-start md:items-center justify-between gap-4"
+        >
+          <div>
+            <h1 className="text-4xl font-black terminal-text flex items-center gap-3">
+              <div className="p-2 bg-neon-lime/10 rounded-lg">
+                <Zap className="text-neon-lime" size={32} />
               </div>
+              YieldMind
+            </h1>
+            <p className="text-gray-400 mt-2 font-mono text-sm border-l-2 border-neon-lime pl-3 ml-2">
+              Autonomous DeFi Optimizer • BNB Chain
+            </p>
+          </div>
+          
+          <div className="flex flex-col items-end gap-3 w-full md:w-auto">
+            <div className="flex items-center gap-4 bg-black/50 px-4 py-2 rounded-lg border border-dark-border">
+              <div className="flex items-center gap-2">
+                <Cpu className={aiStatus === 'Active' ? 'text-neon-lime pulse-glow' : 'text-yellow-500'} size={18} />
+                <span className="text-sm font-mono text-gray-300">{aiStatus}</span>
+              </div>
+              <div className="w-px h-4 bg-dark-border"></div>
               <UtcClock />
+            </div>
+            
+            <div className="flex gap-3 w-full md:w-auto">
               <button
                 onClick={triggerCycle}
                 disabled={isTriggeringCycle}
-                className={`glow-button terminal-border rounded px-4 py-2 text-sm font-bold w-full ${
-                  isTriggeringCycle ? 'opacity-50 cursor-not-allowed' : ''
-                }`}
+                className="glow-button flex-1 md:flex-none rounded px-6 py-2 text-sm font-bold uppercase tracking-wider flex items-center justify-center gap-2"
               >
-                {isTriggeringCycle ? 'Running cycle...' : 'Run cycle now'}
+                {isTriggeringCycle ? <Activity className="animate-spin" size={16} /> : <Zap size={16} />}
+                {isTriggeringCycle ? 'Executing...' : 'Force Cycle'}
               </button>
-              {triggerError ? (
-                <p className="text-xs text-red-400 mt-2">{triggerError}</p>
-              ) : triggerMessage ? (
-                <p className="text-xs text-green-400 mt-2">{triggerMessage}</p>
-              ) : null}
-              <p className="text-xs opacity-50">
-                Last Update: {lastUpdate.toLocaleTimeString()}
-              </p>
+              
+              {/* Fake Connect Button for Demo/Scaffolding - Replace with Wagmi later */}
+              <button className="bg-white text-black px-6 py-2 rounded text-sm font-bold hover:bg-gray-200 transition-colors">
+                Connect Wallet
+              </button>
+            </div>
+            <div className="min-h-[1rem] flex items-center justify-end w-full">
+              {triggerStatus && (
+                <p
+                  className={`text-xs font-mono ${triggerStatus.tone === 'error' ? 'text-red-400' : 'text-neon-lime'}`}
+                  title={triggerStatus.message}
+                >
+                  {triggerStatus.message}
+                </p>
+              )}
             </div>
           </div>
-        </div>
+        </motion.div>
 
-        {/* Vault Status */}
-        <VaultStatus balance={vaultBalance} currentProtocol={currentProtocol} />
-
-        {/* Protocol Cards */}
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold mb-4 flex items-center">
-            <TrendingUp className="mr-2" size={24} />
-            Protocol APYs
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {protocols.map((protocol) => (
-              <ProtocolCard key={protocol.name} {...protocol} />
-            ))}
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center h-64 space-y-4">
+            <Activity className="text-neon-lime animate-spin" size={48} />
+            <p className="text-neon-lime font-mono animate-pulse">Syncing on-chain state...</p>
           </div>
-        </div>
+        ) : (
+          <>
+            {initError && (
+              <div className="mb-6 rounded-lg px-4 py-3 bg-red-950/20 border border-red-500/20">
+                <p className="text-sm font-mono text-red-300">{initError}</p>
+              </div>
+            )}
+            <VaultStatus balance={vaultBalance} currentProtocol={currentProtocol} />
 
-        {/* Rebalance History */}
-        <RebalanceLog rebalances={rebalances} />
+            <div className="mb-8">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold flex items-center gap-3 text-white">
+                  <TrendingUp className="text-neon-lime" size={24} />
+                  Live Yield Matrix
+                </h2>
+                <span className="text-xs text-gray-500 font-mono">Auto-updates every 30s</span>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {protocols.map((protocol, idx) => (
+                  <ProtocolCard key={protocol.name} {...protocol} index={idx} />
+                ))}
+              </div>
+            </div>
+
+            <RebalanceLog rebalances={rebalances} />
+          </>
+        )}
       </div>
     </main>
   )
 }
 
 function UtcClock() {
-  const [now, setNow] = useState<Date>(() => new Date())
-
+  const [now, setNow] = useState<Date | null>(null)
   useEffect(() => {
-    const interval = setInterval(() => setNow(new Date()), 10000)
+    setNow(new Date())
+    const interval = setInterval(() => setNow(new Date()), 1000)
     return () => clearInterval(interval)
   }, [])
 
-  return <p className="text-xs opacity-50 mb-3">{now.toUTCString().replace('GMT', 'UTC')}</p>
+  if (!now) {
+    return <span className="text-xs text-gray-400 font-mono invisible">00:00:00 UTC</span>
+  }
+
+  const hours = String(now.getUTCHours()).padStart(2, '0')
+  const minutes = String(now.getUTCMinutes()).padStart(2, '0')
+  const seconds = String(now.getUTCSeconds()).padStart(2, '0')
+  const time = `${hours}:${minutes}:${seconds}`
+
+  return <span className="text-xs text-gray-400 font-mono">{time} UTC</span>
 }
