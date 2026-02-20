@@ -118,7 +118,7 @@ export default function WalletConnectButton() {
   useEffect(() => {
     if (!isMenuOpen) return
 
-    const handlePointerDown = (event: PointerEvent) => {
+    const handlePointerDown = (event: PointerEvent | MouseEvent) => {
       if (!rootRef.current) return
       if (event.target instanceof Node && rootRef.current.contains(event.target)) return
       setIsMenuOpen(false)
@@ -128,10 +128,13 @@ export default function WalletConnectButton() {
       if (event.key === 'Escape') setIsMenuOpen(false)
     }
 
-    window.addEventListener('pointerdown', handlePointerDown)
+    const supportsPointerEvents = 'onpointerdown' in window
+    const outsideEvent = supportsPointerEvents ? 'pointerdown' : 'mousedown'
+
+    window.addEventListener(outsideEvent, handlePointerDown as EventListener)
     window.addEventListener('keydown', handleKeyDown)
     return () => {
-      window.removeEventListener('pointerdown', handlePointerDown)
+      window.removeEventListener(outsideEvent, handlePointerDown as EventListener)
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isMenuOpen])
