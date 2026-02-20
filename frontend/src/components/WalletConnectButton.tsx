@@ -32,13 +32,17 @@ declare global {
 
 function shortenAddress(address: string) {
   const normalized = address.trim()
-  if (normalized.length <= 12) return normalized
+  if (!/^0x[0-9a-fA-F]{8,}$/.test(normalized)) return normalized
   return `${normalized.slice(0, 6)}…${normalized.slice(-4)}`
 }
 
 function parseChainId(chainId: unknown) {
   if (typeof chainId === 'number') return chainId
-  if (typeof chainId === 'bigint') return Number(chainId)
+  if (typeof chainId === 'bigint') {
+    const maxSafe = BigInt(Number.MAX_SAFE_INTEGER)
+    if (chainId > maxSafe) return null
+    return Number(chainId)
+  }
   if (typeof chainId !== 'string') return null
   const normalized = chainId.trim()
   const parsed = normalized.startsWith('0x') ? Number.parseInt(normalized, 16) : Number.parseInt(normalized, 10)
@@ -46,10 +50,10 @@ function parseChainId(chainId: unknown) {
 }
 
 function getFallbackWalletName(ethereum: Window['ethereum']) {
-  if (!ethereum) return 'Browser Wallet'
+  if (!ethereum) return 'Injected Wallet'
   if (ethereum.isMetaMask) return 'MetaMask'
   if (ethereum.isCoinbaseWallet) return 'Coinbase Wallet'
-  return 'Browser Wallet'
+  return 'Injected Wallet'
 }
 
 export default function WalletConnectButton() {
@@ -81,6 +85,8 @@ export default function WalletConnectButton() {
   }, [providers])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+
     const handleProviderAnnouncement = (event: Event) => {
       const customEvent = event as CustomEvent<Eip6963ProviderDetail>
       const detail = customEvent.detail
@@ -93,11 +99,11 @@ export default function WalletConnectButton() {
       })
     }
 
-    window.addEventListener('eip6963:announceProvider', handleProviderAnnouncement)
-    window.dispatchEvent(new Event('eip6963:requestProvider'))
+    window.addEventListener('eip6963:announceProvider', handleProviderAnnouncement as EventListener)
+    window.dispatchEvent(new CustomEvent('eip6963:requestProvider'))
 
     return () => {
-      window.removeEventListener('eip6963:announceProvider', handleProviderAnnouncement)
+      window.removeEventListener('eip6963:announceProvider', handleProviderAnnouncement as EventListener)
     }
   }, [])
 
@@ -110,8 +116,16 @@ export default function WalletConnectButton() {
       setIsMenuOpen(false)
     }
 
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setIsMenuOpen(false)
+    }
+
     window.addEventListener('mousedown', handlePointerDown)
-    return () => window.removeEventListener('mousedown', handlePointerDown)
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('mousedown', handlePointerDown)
+      window.removeEventListener('keydown', handleKeyDown)
+    }
   }, [isMenuOpen])
 
   useEffect(() => {
@@ -145,9 +159,8 @@ export default function WalletConnectButton() {
     try {
       await providerDetail.provider.request({ method: 'eth_requestAccounts' })
       const browserProvider = new BrowserProvider(providerDetail.provider as never)
-      const signer = await browserProvider.getSigner()
+      const [signer, network] = await Promise.all([browserProvider.getSigner(), browserProvider.getNetwork()])
       const connectedAddress = await signer.getAddress()
-      const network = await browserProvider.getNetwork()
 
       setActiveProvider(providerDetail.provider)
       setActiveProviderInfo(providerDetail.info)
@@ -158,7 +171,7 @@ export default function WalletConnectButton() {
     }
   }
 
-  const disconnect = () => {
+  const clearConnection = () => {
     setIsMenuOpen(false)
     setActiveProvider(null)
     setActiveProviderInfo(null)
@@ -172,16 +185,11 @@ export default function WalletConnectButton() {
       return
     }
 
-    if (providersWithFallback.length === 1) {
-      void connectToProvider(providersWithFallback[0])
-      return
-    }
-
     setIsMenuOpen(true)
   }
 
   const activeProviderName =
-    activeProviderInfo?.name || (typeof window === 'undefined' ? 'Browser Wallet' : getFallbackWalletName(window.ethereum))
+    activeProviderInfo?.name || (typeof window === 'undefined' ? 'Injected Wallet' : getFallbackWalletName(window.ethereum))
   const label = isConnected ? shortenAddress(address ?? '') : 'Connect Wallet'
 
   return (
@@ -211,10 +219,10 @@ export default function WalletConnectButton() {
               <button
                 type="button"
                 role="menuitem"
-                onClick={disconnect}
+                onClick={clearConnection}
                 className="w-full text-left px-4 py-3 text-sm text-red-300 hover:bg-red-950/30 transition-colors"
               >
-                Disconnect
+                Clear connection
               </button>
             </>
           ) : (
