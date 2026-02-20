@@ -43,8 +43,9 @@ function parseChainId(chainId: unknown) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-// Infers a human-readable label for injected-style providers based on well-known flags.
-function getFallbackWalletName(provider: Eip1193Provider | null | undefined) {
+// Best-effort label for injected-style providers based on common flags.
+// Note: some wallets may set `isMetaMask` for compatibility, so this isn't authoritative.
+function getInjectedWalletFallbackName(provider: Eip1193Provider | null | undefined) {
   if (!provider) return 'Injected Wallet'
   if (provider.isMetaMask) return 'MetaMask'
   if (provider.isCoinbaseWallet) return 'Coinbase Wallet'
@@ -90,7 +91,7 @@ export default function WalletConnectButton() {
       {
         info: {
           uuid: 'window.ethereum',
-          name: getFallbackWalletName(window.ethereum),
+          name: getInjectedWalletFallbackName(window.ethereum),
           icon: '',
           rdns: 'injected',
         },
@@ -237,7 +238,7 @@ export default function WalletConnectButton() {
   }
 
   const providerForName = activeProvider ?? (typeof window === 'undefined' ? null : window.ethereum ?? null)
-  const activeProviderName = activeProviderInfo?.name || getFallbackWalletName(providerForName)
+  const activeProviderName = activeProviderInfo?.name || getInjectedWalletFallbackName(providerForName)
   const label = isConnected ? shortenAddress(address ?? '') : 'Connect Wallet'
 
   return (
