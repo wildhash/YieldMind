@@ -24,6 +24,8 @@ declare global {
   }
 }
 
+const INJECTED_PROVIDER_UUID = 'window.ethereum'
+
 function shortenAddress(address: string) {
   const normalized = address.trim()
   if (!/^0x[0-9a-fA-F]{8,}$/.test(normalized)) return normalized
@@ -43,7 +45,7 @@ function parseChainId(chainId: unknown) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-// Derive a human-readable label from common provider flags.
+// Derive a human-readable label from common provider flags (currently MetaMask/Coinbase).
 function getWalletLabelFromFlags(provider: Eip1193Provider | null | undefined) {
   if (!provider) return 'Injected Wallet'
   if (provider.isMetaMask) return 'MetaMask'
@@ -60,6 +62,7 @@ function getActiveProviderName(
   if (activeProviderInfo?.name) return activeProviderInfo.name
 
   if (activeProvider) {
+    // Provider matching relies on stable object identity.
     const discovered = providers.find((providerDetail) => providerDetail.provider === activeProvider)
     if (discovered?.info.name) return discovered.info.name
 
@@ -109,7 +112,7 @@ export default function WalletConnectButton() {
     return [
       {
         info: {
-          uuid: 'window.ethereum',
+          uuid: INJECTED_PROVIDER_UUID,
           name: getWalletLabelFromFlags(window.ethereum),
           icon: '',
           rdns: 'injected',
@@ -257,7 +260,10 @@ export default function WalletConnectButton() {
   }
 
   const injectedProvider = typeof window === 'undefined' ? null : window.ethereum ?? null
-  const activeProviderName = getActiveProviderName(activeProvider, activeProviderInfo, providers, injectedProvider)
+  const activeProviderName =
+    typeof window === 'undefined'
+      ? 'Injected Wallet'
+      : getActiveProviderName(activeProvider, activeProviderInfo, providers, injectedProvider)
   const label = isConnected ? shortenAddress(address ?? '') : 'Connect Wallet'
 
   return (
