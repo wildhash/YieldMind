@@ -2,7 +2,7 @@
 
 import { BrowserProvider } from 'ethers'
 import type { Eip1193Provider as EthersEip1193Provider, Eip6963ProviderInfo as EthersEip6963ProviderInfo } from 'ethers'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 type Eip1193Provider = EthersEip1193Provider & {
   on?: (event: string, listener: (...args: unknown[]) => void) => void
@@ -53,13 +53,24 @@ function getFallbackWalletName(ethereum: Window['ethereum']) {
 
 export default function WalletConnectButton() {
   const rootRef = useRef<HTMLDivElement | null>(null)
+  const connectSeq = useRef(0)
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [providers, setProviders] = useState<Eip6963ProviderDetail[]>([])
   const [activeProvider, setActiveProvider] = useState<Eip1193Provider | null>(null)
   const [activeProviderInfo, setActiveProviderInfo] = useState<Eip6963ProviderInfo | null>(null)
   const [address, setAddress] = useState<string | null>(null)
   const [chainId, setChainId] = useState<number | null>(null)
+  const [connectionError, setConnectionError] = useState<string | null>(null)
   const isConnected = Boolean(address)
+
+  const clearConnection = useCallback(() => {
+    setIsMenuOpen(false)
+    setActiveProvider(null)
+    setActiveProviderInfo(null)
+    setAddress(null)
+    setChainId(null)
+    setConnectionError(null)
+  }, [])
 
   const providersWithFallback = useMemo(() => {
     if (typeof window === 'undefined') return []
@@ -91,7 +102,7 @@ export default function WalletConnectButton() {
       setProviders((current) => {
         const alreadyPresent = current.some((providerDetail) => providerDetail.info.uuid === detail.info.uuid)
         if (alreadyPresent) return current
-        return [...current, detail].sort((a, b) => a.info.name.localeCompare(b.info.name))
+        return [...current, detail]
       })
     }
 
@@ -106,7 +117,7 @@ export default function WalletConnectButton() {
   useEffect(() => {
     if (!isMenuOpen) return
 
-    const handlePointerDown = (event: MouseEvent) => {
+    const handlePointerDown = (event: PointerEvent) => {
       if (!rootRef.current) return
       if (event.target instanceof Node && rootRef.current.contains(event.target)) return
       setIsMenuOpen(false)
@@ -116,10 +127,10 @@ export default function WalletConnectButton() {
       if (event.key === 'Escape') setIsMenuOpen(false)
     }
 
-    window.addEventListener('mousedown', handlePointerDown)
+    window.addEventListener('pointerdown', handlePointerDown)
     window.addEventListener('keydown', handleKeyDown)
     return () => {
-      window.removeEventListener('mousedown', handlePointerDown)
+      window.removeEventListener('pointerdown', handlePointerDown)
       window.removeEventListener('keydown', handleKeyDown)
     }
   }, [isMenuOpen])
@@ -128,8 +139,8 @@ export default function WalletConnectButton() {
     if (!activeProvider) return
 
     const handleAccountsChanged = (accounts: unknown) => {
-      if (!Array.isArray(accounts) || typeof accounts[0] !== 'string') {
-        setAddress(null)
+      if (!Array.isArray(accounts) || accounts.length === 0 || typeof accounts[0] !== 'string') {
+        clearConnection()
         return
       }
 
@@ -147,32 +158,58 @@ export default function WalletConnectButton() {
       activeProvider.removeListener?.('accountsChanged', handleAccountsChanged)
       activeProvider.removeListener?.('chainChanged', handleChainChanged)
     }
-  }, [activeProvider])
+  }, [activeProvider, clearConnection])
+
+  const sortedProvidersWithFallback = useMemo(() => {
+    return [...providersWithFallback].sort((a, b) => a.info.name.localeCompare(b.info.name))
+  }, [providersWithFallback])
 
   const connectToProvider = async (providerDetail: Eip6963ProviderDetail) => {
+    const seq = ++connectSeq.current
     setIsMenuOpen(false)
+    setConnectionError(null)
 
     try {
-      await providerDetail.provider.request({ method: 'eth_requestAccounts' })
+      const accounts = await providerDetail.provider.request({ method: 'eth_requestAccounts' })
+      const requestedAddress =
+        Array.isArray(accounts) && typeof accounts[0] === 'string' && accounts[0].length > 0 ? accounts[0] : null
+
       const browserProvider = new BrowserProvider(providerDetail.provider)
-      const [signer, network] = await Promise.all([browserProvider.getSigner(), browserProvider.getNetwork()])
-      const connectedAddress = await signer.getAddress()
+      const network = await browserProvider.getNetwork()
+
+      let connectedAddress = requestedAddress
+      if (!connectedAddress) {
+        const signer = await browserProvider.getSigner()
+        connectedAddress = await signer.getAddress()
+      }
+
+      if (seq !== connectSeq.current) return
 
       setActiveProvider(providerDetail.provider)
       setActiveProviderInfo(providerDetail.info)
       setAddress(connectedAddress)
       setChainId(parseChainId(network.chainId))
     } catch (error) {
+      if (seq !== connectSeq.current) return
+
+      const maybeError = error as { code?: unknown; message?: unknown; shortMessage?: unknown }
+      const code = maybeError?.code
+      const message =
+        typeof maybeError?.shortMessage === 'string'
+          ? maybeError.shortMessage
+          : typeof maybeError?.message === 'string'
+            ? maybeError.message
+            : null
+
+      if (code === 4001 || message?.toLowerCase().includes('user rejected')) {
+        setConnectionError('Connection request was rejected.')
+      } else {
+        setConnectionError('Wallet connection was cancelled or failed.')
+      }
+
+      setIsMenuOpen(true)
       console.error('Failed to connect wallet', error)
     }
-  }
-
-  const clearConnection = () => {
-    setIsMenuOpen(false)
-    setActiveProvider(null)
-    setActiveProviderInfo(null)
-    setAddress(null)
-    setChainId(null)
   }
 
   const handleButtonClick = () => {
@@ -181,6 +218,7 @@ export default function WalletConnectButton() {
       return
     }
 
+    setConnectionError(null)
     setIsMenuOpen(true)
   }
 
@@ -225,11 +263,12 @@ export default function WalletConnectButton() {
             <>
               <div className="px-4 py-3 border-b border-dark-border">
                 <p className="text-xs text-gray-400 font-mono">Select wallet</p>
+                {connectionError && <p className="mt-2 text-xs text-red-300 font-mono">{connectionError}</p>}
               </div>
-              {providersWithFallback.length === 0 ? (
+              {sortedProvidersWithFallback.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-300">No injected wallet detected.</div>
               ) : (
-                providersWithFallback.map((providerDetail) => (
+                sortedProvidersWithFallback.map((providerDetail) => (
                   <button
                     key={providerDetail.info.uuid}
                     type="button"
