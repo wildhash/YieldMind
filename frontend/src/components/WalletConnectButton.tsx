@@ -46,6 +46,7 @@ function parseChainId(chainId: unknown) {
 // Best-effort label for injected-style providers.
 function getInjectedWalletFallbackName(provider: Eip1193Provider | null | undefined) {
   if (!provider) return 'Injected Wallet'
+  if (provider.isMetaMask) return 'MetaMask'
   if (provider.isCoinbaseWallet) return 'Coinbase Wallet'
   return 'Injected Wallet'
 }
