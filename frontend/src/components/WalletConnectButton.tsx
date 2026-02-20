@@ -1,20 +1,15 @@
 'use client'
 
 import { BrowserProvider } from 'ethers'
+import type { Eip1193Provider as EthersEip1193Provider, Eip6963ProviderInfo as EthersEip6963ProviderInfo } from 'ethers'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-type Eip1193Provider = {
-  request: (args: { method: string; params?: unknown[] | Record<string, unknown> }) => Promise<unknown>
+type Eip1193Provider = EthersEip1193Provider & {
   on?: (event: string, listener: (...args: unknown[]) => void) => void
   removeListener?: (event: string, listener: (...args: unknown[]) => void) => void
 }
 
-type Eip6963ProviderInfo = {
-  uuid: string
-  name: string
-  icon: string
-  rdns: string
-}
+type Eip6963ProviderInfo = EthersEip6963ProviderInfo
 
 type Eip6963ProviderDetail = {
   info: Eip6963ProviderInfo
@@ -90,7 +85,8 @@ export default function WalletConnectButton() {
     const handleProviderAnnouncement = (event: Event) => {
       const customEvent = event as CustomEvent<Eip6963ProviderDetail>
       const detail = customEvent.detail
-      if (!detail?.info?.uuid || !detail.provider) return
+      if (!detail?.info?.uuid || !detail.info.name) return
+      if (typeof detail.provider?.request !== 'function') return
 
       setProviders((current) => {
         const alreadyPresent = current.some((providerDetail) => providerDetail.info.uuid === detail.info.uuid)
@@ -158,7 +154,7 @@ export default function WalletConnectButton() {
 
     try {
       await providerDetail.provider.request({ method: 'eth_requestAccounts' })
-      const browserProvider = new BrowserProvider(providerDetail.provider as never)
+      const browserProvider = new BrowserProvider(providerDetail.provider)
       const [signer, network] = await Promise.all([browserProvider.getSigner(), browserProvider.getNetwork()])
       const connectedAddress = await signer.getAddress()
 
