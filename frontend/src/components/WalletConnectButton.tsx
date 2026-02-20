@@ -43,11 +43,9 @@ function parseChainId(chainId: unknown) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-// Best-effort label for injected-style providers based on common flags.
-// Note: some wallets may set `isMetaMask` for compatibility, so this isn't authoritative.
+// Best-effort label for injected-style providers.
 function getInjectedWalletFallbackName(provider: Eip1193Provider | null | undefined) {
   if (!provider) return 'Injected Wallet'
-  if (provider.isMetaMask) return 'MetaMask'
   if (provider.isCoinbaseWallet) return 'Coinbase Wallet'
   return 'Injected Wallet'
 }
@@ -242,7 +240,7 @@ export default function WalletConnectButton() {
     activeProviderInfo?.name ||
     (activeProvider && injectedProvider && activeProvider === injectedProvider
       ? getInjectedWalletFallbackName(injectedProvider)
-      : 'Injected Wallet')
+      : 'Connected Wallet')
   const label = isConnected ? shortenAddress(address ?? '') : 'Connect Wallet'
 
   return (
