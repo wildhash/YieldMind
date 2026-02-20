@@ -63,8 +63,11 @@ export default function WalletConnectButton() {
   const [connectionError, setConnectionError] = useState<string | null>(null)
   const isConnected = Boolean(address)
 
-  const clearConnection = useCallback(() => {
+  const invalidatePendingConnections = useCallback(() => {
     connectSeq.current += 1
+  }, [])
+
+  const clearConnectionState = useCallback(() => {
     setIsMenuOpen(false)
     setActiveProvider(null)
     setActiveProviderInfo(null)
@@ -72,6 +75,11 @@ export default function WalletConnectButton() {
     setChainId(null)
     setConnectionError(null)
   }, [])
+
+  const clearConnection = useCallback(() => {
+    invalidatePendingConnections()
+    clearConnectionState()
+  }, [clearConnectionState, invalidatePendingConnections])
 
   const providersWithFallback = useMemo(() => {
     if (typeof window === 'undefined') return []
@@ -128,7 +136,7 @@ export default function WalletConnectButton() {
       if (event.key === 'Escape') setIsMenuOpen(false)
     }
 
-    const supportsPointerEvents = 'onpointerdown' in window
+    const supportsPointerEvents = typeof window !== 'undefined' && 'onpointerdown' in window
     const outsideEvent = supportsPointerEvents ? 'pointerdown' : 'mousedown'
 
     window.addEventListener(outsideEvent, handlePointerDown as EventListener)
@@ -169,7 +177,8 @@ export default function WalletConnectButton() {
   }, [providersWithFallback])
 
   const connectToProvider = async (providerDetail: Eip6963ProviderDetail) => {
-    const seq = ++connectSeq.current
+    invalidatePendingConnections()
+    const seq = connectSeq.current
     setIsMenuOpen(false)
     setConnectionError(null)
 
