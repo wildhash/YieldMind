@@ -64,6 +64,7 @@ export default function WalletConnectButton() {
   const isConnected = Boolean(address)
 
   const clearConnection = useCallback(() => {
+    connectSeq.current += 1
     setIsMenuOpen(false)
     setActiveProvider(null)
     setActiveProviderInfo(null)
@@ -194,14 +195,15 @@ export default function WalletConnectButton() {
 
       const maybeError = error as { code?: unknown; message?: unknown; shortMessage?: unknown }
       const code = maybeError?.code
-      const message =
+      const rawMessage =
         typeof maybeError?.shortMessage === 'string'
           ? maybeError.shortMessage
           : typeof maybeError?.message === 'string'
             ? maybeError.message
-            : null
+            : ''
+      const normalizedMessage = rawMessage.toLowerCase()
 
-      if (code === 4001 || message?.toLowerCase().includes('user rejected')) {
+      if (code === 4001 || normalizedMessage.includes('user rejected')) {
         setConnectionError('Connection request was rejected.')
       } else {
         setConnectionError('Wallet connection was cancelled or failed.')
