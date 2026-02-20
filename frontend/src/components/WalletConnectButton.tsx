@@ -237,8 +237,12 @@ export default function WalletConnectButton() {
   }
 
   const injectedProvider = typeof window === 'undefined' ? null : window.ethereum ?? null
+  const discoveredProviderName = activeProvider
+    ? providers.find((providerDetail) => providerDetail.provider === activeProvider)?.info.name
+    : null
   const activeProviderName =
     activeProviderInfo?.name ||
+    discoveredProviderName ||
     (activeProvider && injectedProvider && activeProvider === injectedProvider
       ? getInjectedWalletFallbackName(injectedProvider)
       : 'Injected Wallet')
