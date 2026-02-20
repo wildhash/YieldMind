@@ -7,6 +7,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 type Eip1193Provider = EthersEip1193Provider & {
   on?: (event: string, listener: (...args: unknown[]) => void) => void
   removeListener?: (event: string, listener: (...args: unknown[]) => void) => void
+  isMetaMask?: boolean
+  isCoinbaseWallet?: boolean
 }
 
 type Eip6963ProviderInfo = EthersEip6963ProviderInfo
@@ -18,10 +20,7 @@ type Eip6963ProviderDetail = {
 
 declare global {
   interface Window {
-    ethereum?: Eip1193Provider & {
-      isMetaMask?: boolean
-      isCoinbaseWallet?: boolean
-    }
+    ethereum?: Eip1193Provider
   }
 }
 
@@ -44,10 +43,10 @@ function parseChainId(chainId: unknown) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-function getFallbackWalletName(ethereum: Window['ethereum']) {
-  if (!ethereum) return 'Injected Wallet'
-  if (ethereum.isMetaMask) return 'MetaMask'
-  if (ethereum.isCoinbaseWallet) return 'Coinbase Wallet'
+function getFallbackWalletName(provider: Eip1193Provider | null | undefined) {
+  if (!provider) return 'Injected Wallet'
+  if (provider.isMetaMask) return 'MetaMask'
+  if (provider.isCoinbaseWallet) return 'Coinbase Wallet'
   return 'Injected Wallet'
 }
 
@@ -236,17 +235,7 @@ export default function WalletConnectButton() {
     setIsMenuOpen(true)
   }
 
-  const injectedProvider = typeof window === 'undefined' ? undefined : window.ethereum
-  const activeProviderName = useMemo(() => {
-    if (activeProviderInfo?.name) return activeProviderInfo.name
-    if (!injectedProvider) return 'Injected Wallet'
-
-    if (activeProvider && activeProvider === injectedProvider) {
-      return getFallbackWalletName(injectedProvider)
-    }
-
-    return 'Injected Wallet'
-  }, [activeProvider, activeProviderInfo, injectedProvider])
+  const activeProviderName = activeProviderInfo?.name || getFallbackWalletName(activeProvider)
   const label = isConnected ? shortenAddress(address ?? '') : 'Connect Wallet'
 
   return (
