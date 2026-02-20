@@ -241,7 +241,7 @@ export default function WalletConnectButton() {
     activeProviderInfo?.name ||
     (activeProvider && injectedProvider && activeProvider === injectedProvider
       ? getInjectedWalletFallbackName(injectedProvider)
-      : 'Connected Wallet')
+      : 'Injected Wallet')
   const label = isConnected ? shortenAddress(address ?? '') : 'Connect Wallet'
 
   return (
