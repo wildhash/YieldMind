@@ -236,16 +236,17 @@ export default function WalletConnectButton() {
     setIsMenuOpen(true)
   }
 
+  const injectedProvider = typeof window === 'undefined' ? undefined : window.ethereum
   const activeProviderName = useMemo(() => {
     if (activeProviderInfo?.name) return activeProviderInfo.name
-    if (typeof window === 'undefined') return 'Injected Wallet'
+    if (!injectedProvider) return 'Injected Wallet'
 
-    if (activeProvider && window.ethereum && activeProvider === window.ethereum) {
-      return getFallbackWalletName(window.ethereum)
+    if (activeProvider && activeProvider === injectedProvider) {
+      return getFallbackWalletName(injectedProvider)
     }
 
     return 'Injected Wallet'
-  }, [activeProvider, activeProviderInfo])
+  }, [activeProvider, activeProviderInfo, injectedProvider])
   const label = isConnected ? shortenAddress(address ?? '') : 'Connect Wallet'
 
   return (
