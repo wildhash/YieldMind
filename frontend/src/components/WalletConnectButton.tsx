@@ -43,11 +43,31 @@ function parseChainId(chainId: unknown) {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-// Best-effort label for injected-style providers.
-function getInjectedWalletFallbackName(provider: Eip1193Provider | null | undefined) {
+// Derive a human-readable label from common provider flags.
+function getWalletLabelFromFlags(provider: Eip1193Provider | null | undefined) {
   if (!provider) return 'Injected Wallet'
   if (provider.isMetaMask) return 'MetaMask'
   if (provider.isCoinbaseWallet) return 'Coinbase Wallet'
+  return 'Injected Wallet'
+}
+
+function getActiveProviderName(
+  activeProvider: Eip1193Provider | null,
+  activeProviderInfo: Eip6963ProviderInfo | null,
+  providers: Eip6963ProviderDetail[],
+  injectedProvider: Eip1193Provider | null,
+): string {
+  if (activeProviderInfo?.name) return activeProviderInfo.name
+
+  if (activeProvider) {
+    const discovered = providers.find((providerDetail) => providerDetail.provider === activeProvider)
+    if (discovered?.info.name) return discovered.info.name
+
+    if (injectedProvider && activeProvider === injectedProvider) {
+      return getWalletLabelFromFlags(injectedProvider)
+    }
+  }
+
   return 'Injected Wallet'
 }
 
@@ -90,7 +110,7 @@ export default function WalletConnectButton() {
       {
         info: {
           uuid: 'window.ethereum',
-          name: getInjectedWalletFallbackName(window.ethereum),
+          name: getWalletLabelFromFlags(window.ethereum),
           icon: '',
           rdns: 'injected',
         },
@@ -237,15 +257,7 @@ export default function WalletConnectButton() {
   }
 
   const injectedProvider = typeof window === 'undefined' ? null : window.ethereum ?? null
-  const discoveredProviderName = activeProvider
-    ? providers.find((providerDetail) => providerDetail.provider === activeProvider)?.info.name
-    : null
-  const activeProviderName =
-    activeProviderInfo?.name ||
-    discoveredProviderName ||
-    (activeProvider && injectedProvider && activeProvider === injectedProvider
-      ? getInjectedWalletFallbackName(injectedProvider)
-      : 'Injected Wallet')
+  const activeProviderName = getActiveProviderName(activeProvider, activeProviderInfo, providers, injectedProvider)
   const label = isConnected ? shortenAddress(address ?? '') : 'Connect Wallet'
 
   return (
