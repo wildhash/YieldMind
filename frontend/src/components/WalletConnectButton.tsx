@@ -237,8 +237,12 @@ export default function WalletConnectButton() {
     setIsMenuOpen(true)
   }
 
-  const providerForName = activeProvider ?? (typeof window === 'undefined' ? null : window.ethereum ?? null)
-  const activeProviderName = activeProviderInfo?.name || getInjectedWalletFallbackName(providerForName)
+  const injectedProvider = typeof window === 'undefined' ? null : window.ethereum ?? null
+  const activeProviderName =
+    activeProviderInfo?.name ||
+    (activeProvider && injectedProvider && activeProvider === injectedProvider
+      ? getInjectedWalletFallbackName(injectedProvider)
+      : 'Injected Wallet')
   const label = isConnected ? shortenAddress(address ?? '') : 'Connect Wallet'
 
   return (
