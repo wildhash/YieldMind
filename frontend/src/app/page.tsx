@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import ProtocolCard from '@/components/ProtocolCard'
 import VaultStatus from '@/components/VaultStatus'
 import RebalanceLog from '@/components/RebalanceLog'
+import WalletConnectButton from '@/components/WalletConnectButton'
 import { Activity, Zap, TrendingUp, Cpu } from 'lucide-react'
 import { BACKEND_URL } from '@/lib/constants'
 import { motion } from 'framer-motion'
@@ -253,11 +254,8 @@ export default function Home() {
                 {isTriggeringCycle ? <Activity className="animate-spin" size={16} /> : <Zap size={16} />}
                 {isTriggeringCycle ? 'Executing...' : 'Force Cycle'}
               </button>
-              
-              {/* Fake Connect Button for Demo/Scaffolding - Replace with Wagmi later */}
-              <button className="bg-white text-black px-6 py-2 rounded text-sm font-bold hover:bg-gray-200 transition-colors">
-                Connect Wallet
-              </button>
+
+              <WalletConnectButton />
             </div>
             <div className="min-h-[1rem] flex items-center justify-end w-full">
               {triggerStatus && (
